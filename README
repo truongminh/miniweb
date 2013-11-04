@@ -1,0 +1,11 @@
+HOW TO START
+$corelib/syslib/Build_ename.sh
+$make
+$cd build
+$./miniweb --port 8888
+
+libcore.so: http core and various util functions
+mnwblib/*.so : request handlers
+
+
+
