@@ -18,6 +18,6 @@ httpServer server;
 
 void initServer(char *bindaddr, int port);
 unsigned int numConcurrentFD();
-unsigned int numRequests();
+unsigned int numRequestsPerSecond();
 
 #endif // HTTP_SERVER_H

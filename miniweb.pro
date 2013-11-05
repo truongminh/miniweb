@@ -6,9 +6,13 @@ CONFIG -= qt
 
 SUBDIRS = corelib \
           app \
-          applog
+          applog \
+          status \
+          ok
 
 app.depends = corelib
 applog.depends = corelib
+status.depends = corelib
+ok.depends = corelib
 
 OTHER_FILES += README

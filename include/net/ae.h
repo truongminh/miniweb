@@ -74,15 +74,17 @@ typedef struct aeEventLoop {
 #endif
     char buf[CCACHE_IOBUF_LEN]; /* for temporary client data */
     unsigned int processed;
-    time_t lastTimeout;
+    unsigned int lastSecondProcessed;
+    time_t lastSecond;
+    unsigned int loop;
 } aeEventLoop;
 
 /* Prototypes */
 aeEventLoop *aeCreateEventLoop(void);
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
 void aeStop(aeEventLoop *eventLoop);
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, void *clientData);
-int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask, void *clientData);
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, void *clientData);
+int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask);
 int aeDeleteFileEvent(aeEventLoop *eventLoop, int fd);
 void aeProcessEvents(aeEventLoop *eventLoop);
 void aeMain(aeEventLoop *eventLoop);

@@ -67,6 +67,8 @@ static void open_new_log();
 static struct tm* btime;
 static int next_hour;
 
+static int handle_bmlog(request *req, reply *rep);
+
 static void destructor(void *b)
 {
     listDelNode(jobList,(listNode*)b);    

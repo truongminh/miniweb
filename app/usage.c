@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define JEMALLOC_NO_DEMANGLE 1
+#include <jemalloc/jemalloc.h>
+
 #include "usage.h"
 #include "ccache_config.h"
 
@@ -55,9 +58,11 @@ void usage (int status)
   exit (status);
 }
 
+
+
 struct mnw_options *getOptions(int argc, char *argv[])
 {
-    struct mnw_options *options = malloc(sizeof(struct mnw_options));
+    struct mnw_options *options = je_malloc(sizeof(struct mnw_options));
     options->addr = "0.0.0.0";
     options->port = 80;
     options->srcd = ".";

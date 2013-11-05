@@ -52,13 +52,18 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
         redisLog(CCACHE_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
     }
     */
-    time_t ellapsed = time(NULL) - eventLoop->lastTimeout;
+    time_t now = time(NULL);
+    if (now > eventLoop->lastSecond) {
+        eventLoop->lastSecond = now;
+        eventLoop->loop++;
+        eventLoop->lastSecondProcessed = eventLoop->processed;
+        eventLoop->processed = 0;
 #ifdef AE_MAX_CLIENT_IDLE_TIME    
-    if (ellapsed > eventLoop->maxidletime) {
-        closeTimedoutClients(eventLoop);
-        eventLoop->lastTimeout += ellapsed;
-    }
+        if (eventLoop->loop % eventLoop->maxidletime == 0) {
+            closeTimedoutClients(eventLoop);
+        }
 #endif
+    }
 }
 
 aeEventLoop *aeCreateEventLoop(void) {
@@ -79,10 +84,12 @@ aeEventLoop *aeCreateEventLoop(void) {
     eventLoop->maxclients = AE_MAX_CLIENT_PER_WORKER;
 #endif
 #ifdef AE_MAX_CLIENT_IDLE_TIME
-    eventLoop->maxidletime = 10;//AE_MAX_CLIENT_IDLE_TIME;
-#endif
+    eventLoop->maxidletime = AE_MAX_CLIENT_IDLE_TIME;
+#endif    
+    eventLoop->lastSecond = time(NULL);
+    eventLoop->loop = 0;
+    eventLoop->lastSecondProcessed = eventLoop->processed;
     eventLoop->processed = 0;
-    eventLoop->lastTimeout = time(NULL);
     return eventLoop;
 }
 
@@ -95,20 +102,20 @@ void aeStop(aeEventLoop *eventLoop) {
     eventLoop->stop = 1;
 }
 
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, void *clientData)
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, void *clientData)
 {    
     if (fd >= AE_FD_SET_SIZE) return AE_ERR;
     aeFileEvent *fe = aeEvents + fd;
-    fe->ee->events = mask;
+    fe->ee->events = AE_READABLE;
+    fe->clientData = clientData;
     /* add/modify event associated with fd to event loop */
     if (epoll_ctl(eventLoop->epfd,EPOLL_CTL_ADD,fd,fe->ee))
         return AE_ERR;
-    fe->clientData = clientData;
     eventLoop->numfds++;
     return AE_OK;
 }
 
-int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask, void *clientData)
+int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask)
 {
     if (fd >= AE_FD_SET_SIZE) return AE_ERR;
     aeFileEvent *fe = aeEvents + fd;
@@ -116,7 +123,6 @@ int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask, void *clientData
     /* add/modify event associated with fd to event loop */
     if (epoll_ctl(eventLoop->epfd,EPOLL_CTL_MOD,fd,fe->ee))
         return AE_ERR;
-    fe->clientData = clientData;
     return AE_OK;
 }
 
@@ -162,13 +168,19 @@ void aeProcessEvents(aeEventLoop *eventLoop)
         while(numevents--) {
             fired_ee = newees++;
             fd = fired_ee->data.fd;
-            fe = aeEvents + fired_ee->data.fd;
-            if (fired_ee->events & fe->ee->events & AE_READABLE) {
-                readQueryFromClient(eventLoop,fd,fe->clientData);
+            fe = aeEvents + fired_ee->data.fd;            
+            if (fired_ee->events & fe->ee->events) {
+                switch(fired_ee->events) {
+                case AE_READABLE:
+                    readQueryFromClient(eventLoop,fd,fe->clientData);
+                    break;
+                case AE_WRITABLE:
+                    sendReplyToClient(eventLoop,fd,fe->clientData);
+                default:
+                    break;
+                    sendReplyToClient(eventLoop,fd,fe->clientData);
+                }
             }
-            if (fired_ee->events & fe->ee->events & AE_WRITABLE) {
-                sendReplyToClient(eventLoop,fd,fe->clientData);
-            }            
         };
 }
 

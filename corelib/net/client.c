@@ -27,7 +27,7 @@ httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
     c->blocked = 0;
     c->el = el;
     c->elNode = listAddNodeTailGetNode(el->clients,c);
-    if (aeCreateFileEvent(el, fd, AE_READABLE, c) == AE_ERR)
+    if (aeCreateFileEvent(el, fd, c) == AE_ERR)
     {        
         freeClient(c);
         return NULL;
@@ -115,7 +115,7 @@ void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
 #else
             freeClient(c);
 #endif
-            aeModifyFileEvent(el,c->fd,AE_READABLE,c);
+            aeModifyFileEvent(el,c->fd,AE_READABLE);
             //printf("Send Reply: %.2lf\n", (double)(clock()));
         }
 }
@@ -182,7 +182,7 @@ int closeTimedoutClients(aeEventLoop *el) {
 /* Set the event loop to listen for write events on the client's socket.
  * Typically gets called every time a reply is built. */
 int _installWriteEvent(aeEventLoop *el, httpClient *c) {
-    if (aeModifyFileEvent(el,c->fd,AE_WRITABLE,c) == AE_ERR)
+    if (aeModifyFileEvent(el,c->fd,AE_WRITABLE) == AE_ERR)
         return CCACHE_ERR;
     return CCACHE_OK;
 }

@@ -11,8 +11,8 @@ static void *aeWorkerThread(void *eventloop);
 
 void *aeWorkerThread(void *eventloop)
 {
-   initRequestHandle(); /* initialize thread-specific data */
    aeEventLoop *el = eventloop;
+   initRequestHandle(el->myid); /* initialize thread-specific data */
    aeMain(el);
    aeDeleteEventLoop(el);
    free(el);
@@ -68,7 +68,7 @@ static void acceptTcpHandler() {
 }
 
 void initServer(char *bindaddr, int port)
-{
+{    
     server.sport = port;    
     server.sip = strdup(bindaddr);
     server.numworkers = CCACHE_NUM_WORKER_THREADS;
@@ -76,11 +76,11 @@ void initServer(char *bindaddr, int port)
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
     for (i = 0; i < AE_FD_SET_SIZE; i++) {
-        struct epoll_event *ee = malloc(sizeof(struct epoll_event));
+        server.events[i].ee = malloc(sizeof(struct epoll_event));
+        struct epoll_event *ee = server.events[i].ee;
         ee->data.u64 = 0; /* suppress union cause valgrin check warning */
         ee->data.fd = i;
         ee->events = AE_UNACTIVATED;
-        server.events[i].ee = ee;
     }
 
     pthread_t threads[CCACHE_NUM_WORKER_THREADS];
@@ -116,16 +116,16 @@ unsigned int numConcurrentFD() {
     int numworkers = server.numworkers;
     int numfd = 0;
     while(numworkers--) {
-        numfd += workers[numworkers]->maxclients;
+        numfd += listLength(workers[numworkers]->clients);
     }
     return numfd;
 }
 
-unsigned int numRequests() {
+unsigned int numRequestsPerSecond() {
     int numworkers = server.numworkers;
     int numProcessed = 0;
     while(numworkers--) {
-        numProcessed += workers[numworkers]->processed;
+        numProcessed += workers[numworkers]->lastSecondProcessed;
     }
     return numProcessed;
 }

@@ -36,18 +36,25 @@
 #include "syslib/tlpi_hdr.h"
 
 static __thread dict* handlers;
+static __thread int wid;
 
 typedef int handlerProc(request *req, reply *rep);
 static void loadLib(char *fn, char *initFunc);
 static int loadLibDir(const char* dirname);
 static reply *r_not_found;
 
-void initRequestHandle()
+void initRequestHandle(int id)
 {
+    wid = id;
     handlers = dictCreate(&charFunctionDictType, NULL);
     loadLibDir("mnwlib");
     r_not_found = replyCreate();
     replyStock(r_not_found,reply_not_found,"NOT FOUND");
+}
+
+int get_wid()
+{
+    return wid;
 }
 
 int requestHandle(request *req, reply *rep)
@@ -97,7 +104,7 @@ void loadLib(char *fn, char *initFunc)
             printf("[ERR] load [%s]\n", fn);
         }
         else {
-            printf("[OK] [%s] loaded\n", fn);
+            printf("[T%d OK] [%s] loaded\n", wid, fn);
         }
     }
     /* dlclose(libHandle); Do not close the library */

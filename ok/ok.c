@@ -1,6 +1,7 @@
-/* request_handler.c - http request handler
+/* bmlog.c
  *
- * Copyright (c) 2013, Nguyen Truong Minh <nguyentrminh at gmail dot com>
+ * Copyright (c) 2013, EPI Technologies
+ * written by Nguyen Truong Minh <nguyentrminh at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,22 +26,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef REQUEST_HANDLER_H
-#define REQUEST_HANDLER_H
+#include <string.h>
+#include <stdio.h>
+#include "ok.h"
+#include "lib/dict.h"
+#include "net/http_server.h"
 
-#include "http/request.h"
-#include "http/reply.h"
+static char *status_url = "/ok";
 
-#define HANDLER_OK 0
-#define HANDLER_ERR 1
-#define HANDLER_BLOCK 2
+static int handle_status(request *req, reply *rep);
 
-void initRequestHandle(int id);
+int init(dict *handlers)
+{
+    if(dictAdd(handlers,status_url,&handle_status) == DICT_ERR) {
+        printf("[ERR] duplicate service init [%s]\n",status_url);
+        return -1;
+    }
 
-int get_wid();
+    return 0;
+}
 
-int requestHandle(request *req, reply *rep);
-
-void requestHandleError(request *req, reply *rep);
-
-#endif // REQUEST_HANDLER_H
+int handle_status(request *req, reply *rep)
+{    
+    (void)req;
+    replyStock(rep,reply_ok,NULL);
+    return 0;
+}
