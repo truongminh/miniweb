@@ -49,21 +49,9 @@ static void acceptTcpHandler() {
         httpWorker nextEL = workers[cfd%numworkers];
 #endif
         if ((c = createClient(nextEL,cfd,cip,cport)) == NULL) {            
-            errMsg("Cannot allocate resource for new clients");
+            errMsg("create new clients [%d]",cip);
             continue;
         }
-    #ifdef AE_MAX_CLIENT_PER_WORKER
-        /* Check for max client */
-        if (listLength(nextEL->clients) > AE_MAX_CLIENT_PER_WORKER) {
-            static char *max_client_err = "-ERR MAX CLIENT\r\n";
-            /* That's a best effort error message, don't check write errors */
-            if (write(cfd,max_client_err,17) == -1) {
-                /* Nothing to do, Just to avoid the warning... */
-            }
-            freeClient(c);
-            return;
-        }
-    #endif
     }
 }
 

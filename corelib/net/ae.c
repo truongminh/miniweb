@@ -53,7 +53,7 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
     }
     */
     time_t now = time(NULL);
-    if (now > eventLoop->lastSecond) {
+    if (now > eventLoop->lastSecond) {        
         eventLoop->lastSecond = now;
         eventLoop->loop++;
         eventLoop->lastSecondProcessed = eventLoop->processed;
@@ -63,6 +63,26 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
             closeTimedoutClients(eventLoop);
         }
 #endif
+    }
+
+
+    httpClient *c;
+    while((c = safeQueuePop(eventLoop->acceptingClients)))
+    {
+#ifdef AE_MAX_CLIENT_PER_WORKER
+        if(eventLoop->numfds > AE_MAX_CLIENT_PER_WORKER) {
+            static char *max_client_err = "-ERR MAX CLIENT\r\n";
+            /* That's a best effort error message, don't check write errors */
+            if (write(c->fd,max_client_err,17) == -1) {
+                /* Nothing to do, Just to avoid the warning... */
+            }
+            freeClient(c);
+            continue;
+#endif
+        }
+        c->el = eventLoop;
+        c->elNode = listAddNodeTailGetNode(eventLoop->clients,c);
+        if (aeCreateFileEvent(eventLoop, c->fd, c)) freeClient(c);
     }
 }
 
@@ -80,6 +100,7 @@ aeEventLoop *aeCreateEventLoop(void) {
     eventLoop->stop = 0;
     eventLoop->numfds = 0;
     eventLoop->clients = listCreate();    
+    eventLoop->acceptingClients = safeQueueCreate();
 #ifdef AE_MAX_CLIENT_PER_WORKER
     eventLoop->maxclients = AE_MAX_CLIENT_PER_WORKER;
 #endif
@@ -155,7 +176,7 @@ static void aeGetTime(long *seconds, long *milliseconds)
 void aeProcessEvents(aeEventLoop *eventLoop)
 {
 
-        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,1);
+        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,2);
         if(numevents < 1) {
             /* No waiting client */
             usleep(10000);
@@ -186,6 +207,7 @@ void aeProcessEvents(aeEventLoop *eventLoop)
 
 void aeMain(aeEventLoop *eventLoop) {    
     eventLoop->stop = 0;
+    int i = 0;
     while (!eventLoop->stop) {        
         workerBeforeSleep(eventLoop);
         aeProcessEvents(eventLoop);

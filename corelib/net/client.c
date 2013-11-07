@@ -13,6 +13,7 @@ static int _installWriteEvent(aeEventLoop *el, httpClient *c);
 
 httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
     httpClient *c = malloc(sizeof(*c));
+    if(!c) return NULL;
     /* Set the socket to nonblock as the default state set by the kernel is blocking or waiting */
     anetNonBlock(NULL,fd);
     anetTcpNoDelay(NULL,fd);
@@ -20,16 +21,12 @@ httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
     c->rep = replyCreate();
     c->bufpos = 0;
     c->req = requestCreate();
-    c->lastinteraction = time(NULL);
+    c->lastinteraction = el->lastSecond;
     c->ip = strdup(ip);
     c->port = port;
-    c->elNode = NULL;
     c->blocked = 0;
-    c->el = el;
-    c->elNode = listAddNodeTailGetNode(el->clients,c);
-    if (aeCreateFileEvent(el, fd, c) == AE_ERR)
-    {        
-        freeClient(c);
+    if(safeQueuePush(el->acceptingClients,c) == SAFE_QUEUE_ERR) {
+        free(c);
         return NULL;
     }
     return c;
@@ -54,7 +51,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
     }
     else {
         //printf("Read Request: %.2lf \n", (double)(clock()));
-        c->lastinteraction = time(NULL);
+        c->lastinteraction = el->lastSecond;
         listMoveNodeToTail(el->clients,c->elNode);
         /* NOTICE: nread or nread-1 */
         switch(requestParse(c->req,buf,buf+nread)){
@@ -104,7 +101,7 @@ void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
                 return;
             }
         }
-        c->lastinteraction = time(NULL);
+        c->lastinteraction = el->lastSecond;
         listMoveNodeToTail(el->clients,c->elNode);
         if(nwritten < towrite) {
             c->bufpos += nwritten;
