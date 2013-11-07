@@ -70,7 +70,7 @@
 
 /* Asynchronous I/O Options */
 #define AE_MAX_CLIENT_PER_WORKER 16000 /* Number of client pending at acceptor */
-#define AE_MAX_EPOLL_EVENTS 1024
+#define AE_MAX_EPOLL_EVENTS 128
 #define AE_FD_SET_SIZE (CCACHE_NUM_WORKER_THREADS*AE_MAX_CLIENT_PER_WORKER)    /* Max number of fd supported */
 #define AE_MAX_CLIENT_IDLE_TIME 10 /* seconds */
 

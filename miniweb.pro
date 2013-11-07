@@ -15,4 +15,8 @@ applog.depends = corelib
 status.depends = corelib
 ok.depends = corelib
 
-OTHER_FILES += README
+OTHER_FILES += README \
+    qmake_to_Makefile.sh \
+    distribute.sh
+
+

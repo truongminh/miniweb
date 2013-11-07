@@ -1,5 +1,5 @@
 # Matches ALL Makefile and Makefile.in occurrences 
-Makefile
+#Makefile
 Makefile.in
 
 # ...
