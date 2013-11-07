@@ -35,6 +35,7 @@
 
 #include <sys/epoll.h>
 #include "lib/adlist.h"
+#include "lib/safe_queue.h"
 #include "ccache_config.h"
 
 #define AE_OK 0
@@ -66,6 +67,7 @@ typedef struct aeEventLoop {
     list *clients;    
     int myid;
     int numworkers;
+    safeQueue *acceptingClients;
 #ifdef AE_MAX_CLIENT_PER_WORKER
     unsigned int maxclients;
 #endif

@@ -29,8 +29,8 @@
 #define SAFE_LIST_H
 #include "malloc.h"
 
-#define SAFE_QUEUE_OK 1
-#define SAFE_QUEUE_ERR 0
+#define SAFE_QUEUE_OK 0
+#define SAFE_QUEUE_ERR -1
 
 typedef struct safeQueueEntry_t {
     void *value;

@@ -27,6 +27,8 @@
 
 #include "lib/safe_queue.h"
 
+/* End of queue: head = NULL */
+
 safeQueue * safeQueueCreate() {
     safeQueue *sl = malloc(sizeof(*sl));
     sl->head = NULL;
@@ -63,6 +65,7 @@ int safeQueuePush(safeQueue *ll, void *value) {
     if(node == NULL) return SAFE_QUEUE_ERR;
     node->value = value;
     node->next = NULL;
+    /* Add node to tail */
     ll->tail->next = node;
     ll->tail = node;
     if(ll->head == NULL) ll->head = ll->tail;
