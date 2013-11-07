@@ -1,6 +1,5 @@
 HOW TO START
-$include/syslib/Build_ename.sh > corelib/syslib/ename.c.inc
-$make
+$./autogen.sh
 $cd build
 $./miniweb --port 8888
 
