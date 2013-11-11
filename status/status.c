@@ -47,7 +47,8 @@ int init(dict *handlers)
 }
 
 int handle_status(request *req, reply *rep)
-{
+{    
+    (void)req;
     char buf[1024];
     sprintf(buf,"Number of Concurent Connections: %d \n" \
             "Number of Requests Per Second: %d \n",

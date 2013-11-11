@@ -34,8 +34,9 @@
 #define __AE_H__
 
 #include <sys/epoll.h>
-#include "lib/adlist.h"
-#include "lib/safe_queue.h"
+//#include "lib/adlist.h"
+#include "lib/list.h"
+#include "lib/kfifo.h"
 #include "ccache_config.h"
 
 #define AE_OK 0
@@ -64,10 +65,11 @@ typedef struct aeEventLoop {
     int stop;
     void *apidata; /* This is used for polling API specific data */
     /* for epoll apidata = {epoll fd, array of events} */
-    list *clients;    
+    struct list_head clients;
     int myid;
     int numworkers;
-    safeQueue *acceptingClients;
+    char accepting_clients_buffer[MAX_REQUEST_PER_LOOP];
+    struct kfifo *acceptingClients;
 #ifdef AE_MAX_CLIENT_PER_WORKER
     unsigned int maxclients;
 #endif

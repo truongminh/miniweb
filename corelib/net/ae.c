@@ -67,8 +67,13 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
 
 
     httpClient *c;
-    while((c = safeQueuePop(eventLoop->acceptingClients)))
-    {
+    while (kfifo_len(eventLoop->acceptingClients)) {
+        /* ... read it, one integer at a time */
+        if (kfifo_out(eventLoop->acceptingClients, &c, HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
+            printf("kfifo accepting clients %d\n", eventLoop->myid);
+            break;
+        }
+
 #ifdef AE_MAX_CLIENT_PER_WORKER
         if(eventLoop->numfds > AE_MAX_CLIENT_PER_WORKER) {
             static char *max_client_err = "-ERR MAX CLIENT\r\n";
@@ -81,7 +86,7 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
 #endif
         }
         c->el = eventLoop;
-        c->elNode = listAddNodeTailGetNode(eventLoop->clients,c);
+        list_add(&c->elNode,&eventLoop->clients);
         if (aeCreateFileEvent(eventLoop, c->fd, c)) freeClient(c);
     }
 }
@@ -99,8 +104,11 @@ aeEventLoop *aeCreateEventLoop(void) {
     }
     eventLoop->stop = 0;
     eventLoop->numfds = 0;
-    eventLoop->clients = listCreate();    
-    eventLoop->acceptingClients = safeQueueCreate();
+    LIST_HEAD_INIT(eventLoop->clients);
+    eventLoop->clients.next = &(eventLoop->clients);
+    eventLoop->clients.prev = &(eventLoop->clients);
+    eventLoop->acceptingClients = malloc(sizeof(struct kfifo));
+    kfifo_init(eventLoop->acceptingClients,eventLoop->accepting_clients_buffer,MAX_REQUEST_PER_LOOP);
 #ifdef AE_MAX_CLIENT_PER_WORKER
     eventLoop->maxclients = AE_MAX_CLIENT_PER_WORKER;
 #endif
@@ -116,6 +124,7 @@ aeEventLoop *aeCreateEventLoop(void) {
 
 void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     close(eventLoop->epfd);
+    free(eventLoop->acceptingClients);
     free(eventLoop);
 }
 
@@ -207,7 +216,6 @@ void aeProcessEvents(aeEventLoop *eventLoop)
 
 void aeMain(aeEventLoop *eventLoop) {    
     eventLoop->stop = 0;
-    int i = 0;
     while (!eventLoop->stop) {        
         workerBeforeSleep(eventLoop);
         aeProcessEvents(eventLoop);

@@ -27,7 +27,6 @@
 
 #ifndef REPLY_H
 #define REPLY_H
-#include "lib/adlist.h"
 #include "lib/sds.h"
 #include "lib/dict.h"
 

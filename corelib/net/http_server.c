@@ -104,7 +104,7 @@ unsigned int numConcurrentFD() {
     int numworkers = server.numworkers;
     int numfd = 0;
     while(numworkers--) {
-        numfd += listLength(workers[numworkers]->clients);
+        numfd += workers[numworkers]->numfds;
     }
     return numfd;
 }

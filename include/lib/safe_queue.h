@@ -27,7 +27,7 @@
 
 #ifndef SAFE_LIST_H
 #define SAFE_LIST_H
-#include "malloc.h"
+#include <malloc.h>
 
 #define SAFE_QUEUE_OK 0
 #define SAFE_QUEUE_ERR -1

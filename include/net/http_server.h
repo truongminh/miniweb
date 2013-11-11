@@ -20,4 +20,6 @@ void initServer(char *bindaddr, int port);
 unsigned int numConcurrentFD();
 unsigned int numRequestsPerSecond();
 
+#define SERVER_NOTUSED(x) ((void)x)
+
 #endif // HTTP_SERVER_H

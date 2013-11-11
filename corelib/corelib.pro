@@ -13,6 +13,7 @@ SOURCES += \
     lib/util.c \
     lib/sds.c \
     lib/safe_queue.c \
+    lib/kfifo.c \
     lib/objSds.c \
     lib/dicttype.c \
     lib/dict.c \

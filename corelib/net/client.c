@@ -25,7 +25,7 @@ httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
     c->ip = strdup(ip);
     c->port = port;
     c->blocked = 0;
-    if(safeQueuePush(el->acceptingClients,c) == SAFE_QUEUE_ERR) {
+    if(kfifo_in(el->acceptingClients,&c,HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
         free(c);
         return NULL;
     }
@@ -52,7 +52,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
     else {
         //printf("Read Request: %.2lf \n", (double)(clock()));
         c->lastinteraction = el->lastSecond;
-        listMoveNodeToTail(el->clients,c->elNode);
+        list_move_tail(&c->elNode, &el->clients);
         /* NOTICE: nread or nread-1 */
         switch(requestParse(c->req,buf,buf+nread)){
         case parse_not_completed:
@@ -61,7 +61,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
         {
             requestHandle(c->req,c->rep);
             el->processed++;
-            if (_installWriteEvent(el, c) != CCACHE_OK) {
+            if (_installWriteEvent(el, c) != CLIENT_OK) {
                 freeClient(c);
                 return;
             }
@@ -71,7 +71,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
         }
         case parse_error:
             el->processed++;
-            if (_installWriteEvent(el, c) != CCACHE_OK) {
+            if (_installWriteEvent(el, c) != CLIENT_OK) {
                 freeClient(c);
                 return;
             }
@@ -86,7 +86,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
 void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
     int nwritten = 0;
 
-    CCACHE_NOTUSED(el);    
+    CLIENT_NOTUSED(el);
 
         sds obuf = replyToBuffer(c->rep);
         int towrite = sdslen(obuf) - c->bufpos;
@@ -102,7 +102,7 @@ void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
             }
         }
         c->lastinteraction = el->lastSecond;
-        listMoveNodeToTail(el->clients,c->elNode);
+        list_move_tail(&c->elNode, &el->clients);
         if(nwritten < towrite) {
             c->bufpos += nwritten;
         }
@@ -125,7 +125,7 @@ void freeClient(httpClient *c) {
     if(c->ip) free(c->ip);
     replyFree(c->rep);
     requestFree(c->req);
-    if(c->elNode) listDelNode(c->el->clients,c->elNode);
+    __list_del_entry(&c->elNode);
     free(c);
 }
 
@@ -145,25 +145,9 @@ int closeTimedoutClients(aeEventLoop *el) {
         httpClient *c;
         int deletedNodes = 0;
         time_t now = time(NULL);
-        listIter li;
-        listNode *ln;
-
-        listRewind(el->clients,&li);
-        while ((ln = listNext(&li)) != NULL) {
-            c = listNodeValue(ln);
+        list_for_each_entry_reverse(c, &el->clients, elNode) {
             if (now - c->lastinteraction > el->maxidletime)
-            {                
-                /* the client is waiting for reply */
-                if (c->blocked) {
-                    /* This situation happens when request_handler time exceeds client timeout.
-                     * Client timeout is typically 30 seconds and
-                     * Request_handler rarely consumes more than 1 second.
-                     * This rare case has a very small role in overall performance.                    
-                     */
-                    listNode *ln = listSearchKey(c->ceList,c);
-                    if(ln) listDelNode(c->ceList,ln);
-                    el->processed++;
-                }
+            {
                 freeClient(c);
                 deletedNodes++;
             }
@@ -180,7 +164,7 @@ int closeTimedoutClients(aeEventLoop *el) {
  * Typically gets called every time a reply is built. */
 int _installWriteEvent(aeEventLoop *el, httpClient *c) {
     if (aeModifyFileEvent(el,c->fd,AE_WRITABLE) == AE_ERR)
-        return CCACHE_ERR;
-    return CCACHE_OK;
+        return CLIENT_ERR;
+    return CLIENT_OK;
 }
 

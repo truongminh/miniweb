@@ -13,8 +13,14 @@
 #include "http/reply.h"
 #include "http/request.h"
 #include "net/http_server.h"
+#include "lib/list.h"
 
 extern httpServer server;
+
+#define CLIENT_OK 0
+#define CLIENT_ERR -1
+#define CLIENT_NOTUSED(x) ((void)x)
+
 
 /*-----------------------------------------------------------------------------
  * Data types
@@ -28,11 +34,12 @@ typedef struct httpClient {
     int bufpos;
     request *req;
     time_t lastinteraction; /* time of the last interaction, used for timeout */
-    listNode *elNode; /* point to the position this clients in its eventLoop's list of clients*/
+    struct list_head elNode; /* point to the position this clients in its eventLoop's list of clients*/
     int blocked;
     aeEventLoop *el;
-    list *ceList; /* point to the position of this clients in cache waiting list */
 } httpClient;
+
+#define HTTP_CLIENT_POINTER_SIZE sizeof(httpClient*)
 
 typedef struct {
     int fd;
