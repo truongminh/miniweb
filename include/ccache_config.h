@@ -27,7 +27,7 @@
 #define AE_MAX_EPOLL_EVENTS 128
 #define AE_FD_SET_SIZE (CCACHE_NUM_WORKER_THREADS*AE_MAX_CLIENT_PER_WORKER)    /* Max number of fd supported */
 #define AE_MAX_CLIENT_IDLE_TIME 10 /* seconds */
-#define MAX_REQUEST_PER_LOOP 1024
+#define MAX_REQUEST_PER_LOOP (AE_MAX_CLIENT_PER_WORKER*sizeof(void*))
 
 
 #endif // CCACHE_CONFIG_H
