@@ -11,7 +11,7 @@ static void *aeWorkerThread(void *eventloop);
 
 void *aeWorkerThread(void *eventloop)
 {
-   aeEventLoop *el = eventloop;
+   ae_ev_loop *el = eventloop;
    initRequestHandle(el->myid); /* initialize thread-specific data */
    aeMain(el);
    aeDeleteEventLoop(el);
@@ -36,7 +36,7 @@ static void acceptTcpHandler() {
         }
         /* Create a new client and add it to server.clients list */
         /* NOTICE: must be called via function */
-        httpClient *c;
+        http_client *c;
         /* NOTICE: not fd but cfd. */
         /* This el is from the master.
          * We may Change el to one from workers.

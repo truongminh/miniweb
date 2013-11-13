@@ -49,7 +49,7 @@ void initRequestHandle(int id)
     handlers = dictCreate(&charFunctionDictType, NULL);
     loadLibDir("mnwlib");
     r_not_found = replyCreate();
-    replyStock(r_not_found,reply_not_found,"NOT FOUND");
+    replyStock(r_not_found,reply_not_found,"NOT FOUND");    
 }
 
 int get_wid()
@@ -58,7 +58,7 @@ int get_wid()
 }
 
 int requestHandle(request *req, reply *rep)
-{
+{    
     handlerProc *handler = dictFetchValue(handlers,req->uri);
     //requestPrint(req);
     if (handler) {
@@ -66,6 +66,7 @@ int requestHandle(request *req, reply *rep)
     } else {
         replyShareBuffer(r_not_found,rep);
     }
+    replyAddHeader(rep,"X-Powered-By","Miniweb");
     return HANDLER_OK;
 }
 

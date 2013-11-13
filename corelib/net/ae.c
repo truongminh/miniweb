@@ -41,12 +41,12 @@
 #include "net/client.h"
 
 
-static aeFileEvent *aeEvents = server.events;
-static void workerBeforeSleep(struct aeEventLoop *eventLoop);
+static ae_socket_event *aeEvents = server.events;
+static void workerBeforeSleep(struct ae_ev_loop *eventLoop);
 
 /* We received a SIGTERM,  shuttingdown here in a safe way, as it is
  * not ok doing so inside the signal handler. */
-void workerBeforeSleep(struct aeEventLoop *eventLoop){
+void workerBeforeSleep(struct ae_ev_loop *eventLoop){
     /*if (server.shutdown_asap) {
         if (prepareForShutdown() == CCACHE_OK) exit(0);
         redisLog(CCACHE_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
@@ -66,7 +66,7 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
     }
 
 
-    httpClient *c;
+    http_client *c;
     while (kfifo_len(eventLoop->acceptingClients)) {
         /* ... read it, one integer at a time */
         if (kfifo_out(eventLoop->acceptingClients, &c, HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
@@ -91,8 +91,8 @@ void workerBeforeSleep(struct aeEventLoop *eventLoop){
     }
 }
 
-aeEventLoop *aeCreateEventLoop(void) {
-    aeEventLoop *eventLoop;
+ae_ev_loop *aeCreateEventLoop(void) {
+    ae_ev_loop *eventLoop;
 
     eventLoop = malloc(sizeof(*eventLoop));
     if (!eventLoop) return NULL;
@@ -122,20 +122,20 @@ aeEventLoop *aeCreateEventLoop(void) {
     return eventLoop;
 }
 
-void aeDeleteEventLoop(aeEventLoop *eventLoop) {
+void aeDeleteEventLoop(ae_ev_loop *eventLoop) {
     close(eventLoop->epfd);
     free(eventLoop->acceptingClients);
     free(eventLoop);
 }
 
-void aeStop(aeEventLoop *eventLoop) {
+void aeStop(ae_ev_loop *eventLoop) {
     eventLoop->stop = 1;
 }
 
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, void *clientData)
+int aeCreateFileEvent(ae_ev_loop *eventLoop, int fd, void *clientData)
 {    
     if (fd >= AE_FD_SET_SIZE) return AE_ERR;
-    aeFileEvent *fe = aeEvents + fd;
+    ae_socket_event *fe = aeEvents + fd;
     fe->ee->events = AE_READABLE;
     fe->clientData = clientData;
     /* add/modify event associated with fd to event loop */
@@ -145,10 +145,10 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, void *clientData)
     return AE_OK;
 }
 
-int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask)
+int aeModifyFileEvent(ae_ev_loop *eventLoop, int fd, int mask)
 {
     if (fd >= AE_FD_SET_SIZE) return AE_ERR;
-    aeFileEvent *fe = aeEvents + fd;
+    ae_socket_event *fe = aeEvents + fd;
     fe->ee->events = mask;
     /* add/modify event associated with fd to event loop */
     if (epoll_ctl(eventLoop->epfd,EPOLL_CTL_MOD,fd,fe->ee))
@@ -156,9 +156,9 @@ int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask)
     return AE_OK;
 }
 
-int aeDeleteFileEvent(aeEventLoop *eventLoop, int fd)
+int aeDeleteFileEvent(ae_ev_loop *eventLoop, int fd)
 {
-    aeFileEvent *fe = aeEvents + fd;
+    ae_socket_event *fe = aeEvents + fd;
     fe->clientData = NULL;
     if (fe->ee->events == AE_UNACTIVATED)
         return AE_ERR; /* safe check */
@@ -182,7 +182,7 @@ static void aeGetTime(long *seconds, long *milliseconds)
 }
 */
 
-void aeProcessEvents(aeEventLoop *eventLoop)
+void aeProcessEvents(ae_ev_loop *eventLoop)
 {
 
         int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,2);
@@ -194,7 +194,7 @@ void aeProcessEvents(aeEventLoop *eventLoop)
         struct epoll_event *newees = eventLoop->newees;
         struct epoll_event *fired_ee;
         int fd;
-        aeFileEvent *fe;
+        ae_socket_event *fe;
         while(numevents--) {
             fired_ee = newees++;
             fd = fired_ee->data.fd;
@@ -214,7 +214,7 @@ void aeProcessEvents(aeEventLoop *eventLoop)
         };
 }
 
-void aeMain(aeEventLoop *eventLoop) {    
+void aeMain(ae_ev_loop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {        
         workerBeforeSleep(eventLoop);

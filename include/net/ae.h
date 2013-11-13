@@ -50,14 +50,14 @@
 #define AE_NOTUSED(V) ((void) V)
 
 /* File event structure */
-typedef struct aeFileEvent {
+typedef struct ae_socket_event {
     struct epoll_event *ee;
     void *clientData;
-} aeFileEvent;
+} ae_socket_event;
 
 
 /* State of an event based program */
-typedef struct aeEventLoop {
+typedef struct ae_ev_loop {
     int epfd; // epoll file descriptor. Note: fd is simply an int
     // our server has only one epoll instance.
     struct epoll_event newees[AE_MAX_EPOLL_EVENTS];
@@ -81,17 +81,17 @@ typedef struct aeEventLoop {
     unsigned int lastSecondProcessed;
     time_t lastSecond;
     unsigned int loop;
-} aeEventLoop;
+} ae_ev_loop;
 
 /* Prototypes */
-aeEventLoop *aeCreateEventLoop(void);
-void aeDeleteEventLoop(aeEventLoop *eventLoop);
-void aeStop(aeEventLoop *eventLoop);
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, void *clientData);
-int aeModifyFileEvent(aeEventLoop *eventLoop, int fd, int mask);
-int aeDeleteFileEvent(aeEventLoop *eventLoop, int fd);
-void aeProcessEvents(aeEventLoop *eventLoop);
-void aeMain(aeEventLoop *eventLoop);
+ae_ev_loop *aeCreateEventLoop(void);
+void aeDeleteEventLoop(ae_ev_loop *eventLoop);
+void aeStop(ae_ev_loop *eventLoop);
+int aeCreateFileEvent(ae_ev_loop *eventLoop, int fd, void *clientData);
+int aeModifyFileEvent(ae_ev_loop *eventLoop, int fd, int mask);
+int aeDeleteFileEvent(ae_ev_loop *eventLoop, int fd);
+void aeProcessEvents(ae_ev_loop *eventLoop);
+void aeMain(ae_ev_loop *eventLoop);
 char *aeGetApiName(void);
 
 #endif

@@ -3,7 +3,7 @@
 
 #include "net/ae.h"
 
-typedef aeEventLoop* httpWorker;
+typedef ae_ev_loop* httpWorker;
 
 typedef struct {
     int sport;
@@ -11,7 +11,7 @@ typedef struct {
     int sfd;
     httpWorker workers[CCACHE_NUM_WORKER_THREADS];
     int numworkers;
-    aeFileEvent events[AE_FD_SET_SIZE]; /* Registered events */
+    ae_socket_event events[AE_FD_SET_SIZE]; /* Registered events */
 } httpServer;
 
 httpServer server;

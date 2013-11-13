@@ -79,7 +79,7 @@ request *requestCreate() {
     request* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->method = r->uri = r->current_header_key = NULL;
-    r->headers = dictCreate(&charGeneralDictType,NULL);
+    r->headers = header_table_init();
     r->state = http_method_start;
     r->conremain = 0;
     r->content = NULL;
@@ -90,7 +90,7 @@ request *requestCreate() {
 void requestFree(request *r) {
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
-    dictRelease(r->headers);
+    header_table_free(r->headers);
     /* current_header and current_value was not added to headers */
     if(r->current_header_key) free(r->current_header_key);
     if(r->content) {
@@ -100,8 +100,8 @@ void requestFree(request *r) {
     free(r);
 }
 
-sds requestGetHeaderValue(request *r, const sds key){
-    return dictFetchValue(r->headers,key);
+char *requestGetHeaderValue(request *r, const char* key){
+    return header_table_find(r->headers,key);
 }
 
 void requestReset(request *r){
@@ -111,8 +111,7 @@ void requestReset(request *r){
     if(r->current_header_key) free(r->current_header_key);
 
     r->method = r->uri = r->current_header_key = NULL;
-    dictRelease(r->headers);
-    r->headers = dictCreate(&charGeneralDictType,NULL);
+    header_table_make_empty(r->headers);
 
     r->state = http_method_start;
     r->conremain = 0;
@@ -340,7 +339,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             if (current == '\r')
             {
                 header_value = copy_string(buf,ptr-buf);
-                dictAdd(r->headers,header_key,header_value);
+                header_table_add_fixed(r->headers,header_key,header_value);
                 header_key = NULL;
                 ptr=buf;
                 state = http_expecting_newline_2;
@@ -391,7 +390,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             if (current == '\r')
             {
                 header_value = copy_string(buf,ptr-buf);
-                dictAdd(r->headers,header_key,header_value);
+                header_table_add_fixed(r->headers,header_key,header_value);
                 header_key = NULL;
                 ptr=buf;
                 state = http_expecting_newline_2;
@@ -421,7 +420,8 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             if (likely(current == '\n')) {
                 /* All headers have been parsed */
                 // Check "Content-Length" header                
-                char *str = dictFetchValue(r->headers,HTTP_CONTENT_LENGTH_HEADER);
+                char *str = header_table_find(r->headers,
+                                              HTTP_CONTENT_LENGTH_HEADER);
                 if(str) {
                     int content_length = atoi(str);
                     if(likely(content_length > 0 && content_length < MAX_REQUEST_SIZE)) {
@@ -469,12 +469,8 @@ request_parse_state requestParse(request* r, char* begin, char* end)
 
 void requestPrint(request *r){
     printf("%s %s\n",r->method,r->uri);
-    dictIterator *di = dictGetIterator(r->headers);
-    dictEntry *de;
-    while((de = dictNext(di)) != NULL) {
-        printf("%s: %s\n",(char*)dictGetEntryKey(de),(char*)dictGetEntryVal(de));
-    }
-    dictReleaseIterator(di);
+    header_table_print(r->headers);
+
     if(r->content) {
         printf("Content: %s\n",r->content);
     }

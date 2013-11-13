@@ -26,7 +26,7 @@ extern httpServer server;
  * Data types
  *----------------------------------------------------------------------------*/
 
-typedef struct httpClient {
+typedef struct http_client {
     int fd;    
     char *ip;
     int port;
@@ -36,10 +36,10 @@ typedef struct httpClient {
     time_t lastinteraction; /* time of the last interaction, used for timeout */
     struct list_head elNode; /* point to the position this clients in its eventLoop's list of clients*/
     int blocked;
-    aeEventLoop *el;
-} httpClient;
+    ae_ev_loop *el;
+} http_client;
 
-#define HTTP_CLIENT_POINTER_SIZE sizeof(httpClient*)
+#define HTTP_CLIENT_POINTER_SIZE sizeof(http_client*)
 
 typedef struct {
     int fd;
@@ -53,17 +53,17 @@ typedef struct {
  * Functions prototypes
  *----------------------------------------------------------------------------*/
 
-httpClient *createClient(aeEventLoop *el, int fd, const char *ip, int port);
+http_client *createClient(ae_ev_loop *el, int fd, const char *ip, int port);
 #ifdef AE_MAX_CLIENT_IDLE_TIME
-int closeTimedoutClients(aeEventLoop *el);
+int closeTimedoutClients(ae_ev_loop *el);
 #endif
 
-void freeClient(httpClient *c);
-void resetClient(httpClient *c);
-void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c);
-void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c);
+void freeClient(http_client *c);
+void resetClient(http_client *c);
+void sendReplyToClient(ae_ev_loop *el, int fd, http_client *c);
+void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c);
 
-void unblockClient(httpClient *c, sds obuf);
+void unblockClient(http_client *c, sds obuf);
 
 /*
 Use other mem allocator? NO

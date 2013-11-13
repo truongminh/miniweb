@@ -28,7 +28,7 @@
 #ifndef REPLY_H
 #define REPLY_H
 #include "lib/sds.h"
-#include "lib/dict.h"
+#include "lib/header.h"
 
 #define REPLY_OK DICT_OK
 #define REPLY_ERR DICT_ERR
@@ -63,7 +63,7 @@ typedef struct reply_t
 {
     reply_status_type status;
     /// The headers to be included in the reply.
-    dict *headers;
+    header_table *headers;
     /// The content to be sent in the reply.
     sds content;
     /// The output buffer could be used in cause we want to cache the reply
@@ -78,7 +78,7 @@ void replyFree(reply *r);
 
 sds replyToBuffer(reply* r);
 
-int replyAddHeader(reply* r, const char* name, const char* value);
+void replyAddHeader(reply* r, const char* name, const char* value);
 
 void replySetContent(reply*r , char *content);
 

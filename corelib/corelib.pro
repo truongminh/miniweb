@@ -53,3 +53,4 @@ SOURCES += \
 
 INCLUDEPATH += ../include ../include/syslib
 LIBS += -lpthread -ldl
+

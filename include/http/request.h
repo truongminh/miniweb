@@ -29,7 +29,7 @@
 #define _REQUEST_H
 
 #include "lib/sds.h"
-#include "lib/dict.h"
+#include "lib/header.h"
 
 #define MAX_REQUEST_SIZE 8096
 #define HTTP_CONTENT_LENGTH_HEADER "Content-Length"
@@ -66,6 +66,8 @@ typedef enum
   http_content
 }  http_state;
 
+
+
 /* A request received from a client. */
 typedef struct
 {
@@ -80,7 +82,7 @@ typedef struct
     int conremain;
     int questionInURI;
 
-    dict *headers;
+    header_table *headers;
     sds content;
 
     /* The current state of the parser. */
@@ -90,7 +92,7 @@ typedef struct
     char buf[MAX_REQUEST_SIZE
                 - 4 *sizeof(char*)
                 - 5 * sizeof(int)
-                - sizeof(dict*)
+                - sizeof(header_table*)
                 - sizeof(sds)
                 - sizeof(http_state) - 16];
 } request;
@@ -98,7 +100,7 @@ typedef struct
 void requestInit();
 request *requestCreate();
 void requestFree(request *r);
-sds requestGetHeaderValue(request *r, const sds key);
+char *requestGetHeaderValue(request *r, const char *key);
 void requestReset(request *r);
 request_parse_state requestParse(request* r, char* begin, char* end);
 void requestPrint(request *r);

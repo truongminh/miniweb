@@ -8,11 +8,11 @@
 #include "net/http_server.h"
 #include "syslib/tlpi_hdr.h"
 
-static int _installWriteEvent(aeEventLoop *el, httpClient *c);
+static int _installWriteEvent(ae_ev_loop *el, http_client *c);
 
 
-httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
-    httpClient *c = malloc(sizeof(*c));
+http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
+    http_client *c = malloc(sizeof(*c));
     if(!c) return NULL;
     /* Set the socket to nonblock as the default state set by the kernel is blocking or waiting */
     anetNonBlock(NULL,fd);
@@ -33,7 +33,7 @@ httpClient *createClient(aeEventLoop *el, int fd, const char* ip, int port) {
 }
 
 
-void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
+void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
     char *buf = el->buf;
     int nread;
     nread = read(fd, buf, CCACHE_IOBUF_LEN);
@@ -52,7 +52,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
     else {
         //printf("Read Request: %.2lf \n", (double)(clock()));
         c->lastinteraction = el->lastSecond;
-        list_move_tail(&c->elNode, &el->clients);
+        list_move(&c->elNode, &el->clients);
         /* NOTICE: nread or nread-1 */
         switch(requestParse(c->req,buf,buf+nread)){
         case parse_not_completed:
@@ -83,7 +83,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, httpClient *c) {
     }
 }
 
-void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
+void sendReplyToClient(ae_ev_loop *el, int fd, http_client *c) {
     int nwritten = 0;
 
     CLIENT_NOTUSED(el);
@@ -102,7 +102,8 @@ void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
             }
         }
         c->lastinteraction = el->lastSecond;
-        list_move_tail(&c->elNode, &el->clients);
+
+        list_move(&c->elNode, &el->clients);
         if(nwritten < towrite) {
             c->bufpos += nwritten;
         }
@@ -117,7 +118,7 @@ void sendReplyToClient(aeEventLoop *el, int fd, httpClient *c) {
         }
 }
 
-void freeClient(httpClient *c) {
+void freeClient(http_client *c) {
     //printf("free client \n");
     aeDeleteFileEvent(c->el,c->fd);
     close(c->fd);
@@ -132,7 +133,7 @@ void freeClient(httpClient *c) {
 
 
 /* resetClient prepare the client to process the next command */
-void resetClient(httpClient *c) {
+void resetClient(http_client *c) {
     c->bufpos = 0;
     replyReset(c->rep);
     requestReset(c->req);
@@ -140,12 +141,13 @@ void resetClient(httpClient *c) {
 
 
 #ifdef AE_MAX_CLIENT_IDLE_TIME
-int closeTimedoutClients(aeEventLoop *el) {    
+int closeTimedoutClients(ae_ev_loop *el) {
     if(el->myid != 0) {
-        httpClient *c;
+        http_client *c;
+        http_client *tmp;
         int deletedNodes = 0;
         time_t now = time(NULL);
-        list_for_each_entry_reverse(c, &el->clients, elNode) {
+        list_for_each_entry_safe_reverse(c, tmp, &el->clients, elNode) {
             if (now - c->lastinteraction > el->maxidletime)
             {
                 freeClient(c);
@@ -162,7 +164,7 @@ int closeTimedoutClients(aeEventLoop *el) {
 
 /* Set the event loop to listen for write events on the client's socket.
  * Typically gets called every time a reply is built. */
-int _installWriteEvent(aeEventLoop *el, httpClient *c) {
+int _installWriteEvent(ae_ev_loop *el, http_client *c) {
     if (aeModifyFileEvent(el,c->fd,AE_WRITABLE) == AE_ERR)
         return CLIENT_ERR;
     return CLIENT_OK;

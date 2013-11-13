@@ -34,7 +34,7 @@ reply* replyCreate() {
     reply* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->status = reply_ok;
-    r->headers = dictCreate(&sdsDictType,NULL);
+    r->headers = header_table_init();
     r->obuf = NULL;
     r->content = sdsempty();
     r->isCached = 0;
@@ -42,15 +42,14 @@ reply* replyCreate() {
 }
 
 void replyFree(reply* r) {
-    dictRelease(r->headers);
+    header_table_free(r->headers);
     sdsfree(r->content);
     if(r->obuf&&r->isCached == 0) sdsfree(r->obuf);
     free(r);
 }
 
 void replyReset(reply *r) {
-    dictRelease(r->headers);
-    r->headers = dictCreate(&sdsDictType,NULL);
+    header_table_make_empty(r->headers);
     sdsclear(r->content);
     if(r->obuf && r->isCached == 0) sdsfree(r->obuf);
     r->obuf = NULL;
@@ -61,15 +60,11 @@ sds replyToBuffer(reply* r) {
     if(r->obuf == NULL) {
         sds obuf = sdsempty();
         obuf = sdscat(obuf,replyStatusToString(r->status));
-        dictIterator *di = dictGetIterator(r->headers);
-        dictEntry* de;
-        while((de = dictNext(di)) != NULL) {
-            obuf = sdscatsds(obuf,dictGetEntryKey(de));
-            obuf = sdscat(obuf,": ");
-            obuf = sdscatsds(obuf,dictGetEntryVal(de));
-            obuf = sdscat(obuf,"\r\n");
+        unsigned int i;
+        struct header *h;
+        __header_table_for_each(r->headers, i, h, hlist) {
+            obuf = sdscatprintf(obuf,"%s: %s\r\n",h->key,h->value);
         }
-        dictReleaseIterator(di);
         if(r->content) {
             obuf = sdscatprintf(obuf,"Content-Length: %ld",sdslen(r->content));
             obuf = sdscat(obuf,"\r\n\r\n");
@@ -86,8 +81,8 @@ void replyShareBuffer(reply *src, reply *dst)
     dst->isCached = 1;
 }
 
-int replyAddHeader(reply *r, const char *name, const char *value) {
-    return dictAdd(r->headers,sdsnew(name),sdsnew(value));
+void replyAddHeader(reply *r, const char *name, const char *value) {
+    return header_table_add_fixed(r->headers,strdup(name),strdup(value));
 }
 
 void replySetContent(reply *r , char* content){
