@@ -40,6 +40,8 @@ typedef struct http_client {
 } http_client;
 
 #define HTTP_CLIENT_POINTER_SIZE sizeof(http_client*)
+#define HTTP_CLIENT_REQUEST_IN_BUF(c) (c->req->inbuf)
+#define HTTP_CLIENT_REQUEST_IN_BUF_FREE(c) (c->req->inbuf_free)
 
 typedef struct {
     int fd;

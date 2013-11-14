@@ -34,9 +34,11 @@ http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
 
 
 void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
-    char *buf = el->buf;
+    request *req = c->req;
+    char *inbuf = REQUEST_INBUF_POS(req);
+    int inbuf_free = REQUEST_INBUF_FREE(req);
     int nread;
-    nread = read(fd, buf, CCACHE_IOBUF_LEN);
+    nread = read(fd, inbuf, inbuf_free);
     if (nread == -1) {
         if (errno == EAGAIN) { /* try again */
             return;
@@ -53,8 +55,10 @@ void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
         //printf("Read Request: %.2lf \n", (double)(clock()));
         c->lastinteraction = el->lastSecond;
         list_move(&c->elNode, &el->clients);
+        req->inbuf_pos += nread;
+        req->inbuf_free -= nread;
         /* NOTICE: nread or nread-1 */
-        switch(requestParse(c->req,buf,buf+nread)){
+        switch(requestParse(c->req)){
         case parse_not_completed:
             break;
         case parse_completed:
@@ -70,6 +74,7 @@ void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
                 break;
         }
         case parse_error:
+            printf("Error %d\n",c->req->state);
             el->processed++;
             if (_installWriteEvent(el, c) != CLIENT_OK) {
                 freeClient(c);

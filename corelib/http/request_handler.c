@@ -59,14 +59,16 @@ int get_wid()
 
 int requestHandle(request *req, reply *rep)
 {    
-    handlerProc *handler = dictFetchValue(handlers,req->uri);
+    sds uri = sdsnewlen(req->uri.s, req->uri.len);
+    handlerProc *handler = dictFetchValue(handlers,uri);
+    sdsfree(uri);
     //requestPrint(req);
     if (handler) {
         handler(req,rep);
     } else {
         replyShareBuffer(r_not_found,rep);
     }
-    replyAddHeader(rep,"X-Powered-By","Miniweb");
+    //replyAddHeader(rep,"X-Powered-By","Miniweb");
     return HANDLER_OK;
 }
 

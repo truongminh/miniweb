@@ -67,15 +67,14 @@ typedef enum
 }  http_state;
 
 
-
 /* A request received from a client. */
 typedef struct
 {
-    char *method;
-    char *uri;
+    struct mnws method;
+    struct mnws uri;
     char *ptr;
     char *current_header_key;
-
+    int current_header_key_len;
     int first_header;
     int version_major;
     int version_minor;
@@ -95,14 +94,21 @@ typedef struct
                 - sizeof(header_table*)
                 - sizeof(sds)
                 - sizeof(http_state) - 16];
+    char inbuf[MAX_REQUEST_SIZE];
+    int inbuf_pos;
+    int inbuf_last_parse;
+    int inbuf_free;
 } request;
+
+#define REQUEST_INBUF_POS(r) (r->inbuf+r->inbuf_pos)
+#define REQUEST_INBUF_FREE(r) (r->inbuf_free)
 
 void requestInit();
 request *requestCreate();
 void requestFree(request *r);
-char *requestGetHeaderValue(request *r, const char *key);
+char *requestGetHeaderValue(request *r, char *key);
 void requestReset(request *r);
-request_parse_state requestParse(request* r, char* begin, char* end);
+request_parse_state requestParse(request* r);
 void requestPrint(request *r);
 
 #endif

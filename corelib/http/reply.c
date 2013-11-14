@@ -63,7 +63,7 @@ sds replyToBuffer(reply* r) {
         unsigned int i;
         struct header *h;
         __header_table_for_each(r->headers, i, h, hlist) {
-            obuf = sdscatprintf(obuf,"%s: %s\r\n",h->key,h->value);
+            obuf = sdscatprintf(obuf,"%s: %s\r\n",h->key->s,h->value->s);
         }
         if(r->content) {
             obuf = sdscatprintf(obuf,"Content-Length: %ld",sdslen(r->content));
@@ -82,7 +82,7 @@ void replyShareBuffer(reply *src, reply *dst)
 }
 
 void replyAddHeader(reply *r, const char *name, const char *value) {
-    return header_table_add_fixed(r->headers,strdup(name),strdup(value));
+    return header_table_add_fixed(r->headers,strdup(name),strlen(name), strdup(value), strlen(value));
 }
 
 void replySetContent(reply *r , char* content){

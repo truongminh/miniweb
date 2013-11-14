@@ -1,4 +1,4 @@
-/* bmlog.c
+/* status.c
  *
  * Copyright (c) 2013, EPI Technologies
  * written by Nguyen Truong Minh <nguyentrminh at gmail dot com>
