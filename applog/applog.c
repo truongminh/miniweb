@@ -43,7 +43,7 @@
 #include "net/http_server.h"
 #include "lib/adlist.h"
 
-static char *bmlog_uri = "/applog";
+static char *_uri = "/applog";
 static char *log_dir = "/tmp/relog";
 
 /*
@@ -67,7 +67,7 @@ static void open_new_log();
 static struct tm* btime;
 static int next_hour;
 
-static int handle_bmlog(request *req, reply *rep);
+static int _handle(request *req, reply *rep);
 
 static void destructor(void *b)
 {
@@ -84,7 +84,7 @@ static void create_key(void)
 {
     int s = pthread_key_create(&bmlogKey,destructor);
     if (unlikely(s)) {
-        errMsg("pthread key create %s",bmlog_uri);
+        errMsg("pthread key create %s",_uri);
     }
     pthread_mutex_init(&fd_lock, NULL);
     bmlogOK = replyCreate();
@@ -118,7 +118,7 @@ static void copy_to_disk(struct logbuffer *buffer)
                 usleep(10000); /* sleep 10 ms before try again */
                 continue;
             } else {
-                errMsg("[%s] write to [%s], data will be discarded", bmlog_uri, fn);
+                errMsg("[%s] write to [%s], data will be discarded", _uri, fn);
                 /* suffer loss of data */
                 break;
             }
@@ -197,7 +197,7 @@ static void *log_thread_function(void *arg)
     return NULL;
 }
 
-int init(dict *handlers)
+int init(MODULE_TABLE *handlers)
 {
     int s;
     s = pthread_once(&once,create_key);
@@ -221,15 +221,12 @@ int init(dict *handlers)
         }
     }
 
-    if(dictAdd(handlers,bmlog_uri,&handle_bmlog) == DICT_ERR) {
-        printf("[ERR] duplicate service init [%s]\n",bmlog_uri);
-        return -1;
-    }
+    MODULE_TABLE_add_fixed(handlers,_uri,&_handle);
 
     return 0;
 }
 
-int handle_bmlog(request *req, reply *rep)
+int _handle(request *req, reply *rep)
 {
     safeQueue *myjob = (safeQueue*)pthread_getspecific(bmlogKey);
     if(likely(myjob&&req->content)) {

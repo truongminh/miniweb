@@ -66,7 +66,15 @@ typedef enum
   http_content
 }  http_state;
 
+/* efficient memory alignment */
+#define RBUF_SIZE (MAX_REQUEST_SIZE \
+    - 4 *sizeof(char*) - 8 * sizeof(int) - sizeof(header_table*) \
+    - sizeof(sds) - sizeof(http_state) - 16)
 
+#define RBUF_FREE(r) (RBUF_SIZE - r->buf_used)
+#define RBUF_LAST_IN(r) (r->buf + r->buf_used)
+#define RBUF_LAST_PARSE(r) (r->buf + r->buf_parsed)
+#define RBUF_INCREASE(r, _used)  {r->buf_used += _used;}
 
 /* A request received from a client. */
 typedef struct
@@ -74,7 +82,7 @@ typedef struct
     char *method;
     char *uri;
     char *ptr;
-    char *current_header_key;
+    char *current_header_name;
 
     int first_header;
     int version_major;
@@ -88,21 +96,16 @@ typedef struct
     /* The current state of the parser. */
     http_state state;
 
-    /* efficient memory alignment */
-    char buf[MAX_REQUEST_SIZE
-                - 4 *sizeof(char*)
-                - 5 * sizeof(int)
-                - sizeof(header_table*)
-                - sizeof(sds)
-                - sizeof(http_state) - 16];
+    char buf[RBUF_SIZE];
+    int buf_used;
+    int buf_parsed;
 } request;
 
-void requestInit();
-request *requestCreate();
-void requestFree(request *r);
-char *requestGetHeaderValue(request *r, const char *key);
-void requestReset(request *r);
-request_parse_state requestParse(request* r, char* begin, char* end);
+request *request_create();
+void request_free(request *r);
+char *request_get_header_value(request *r, const char *key);
+void request_reset(request *r);
+request_parse_state request_parse(request* r);
 void requestPrint(request *r);
 
 #endif

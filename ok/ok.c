@@ -29,24 +29,18 @@
 #include <string.h>
 #include <stdio.h>
 #include "ok.h"
-#include "lib/dict.h"
-#include "net/http_server.h"
 
-static char *status_url = "/ok";
+static char *_url = "/ok";
 
-static int handle_status(request *req, reply *rep);
+static int _handle(request *req, reply *rep);
 
-int init(dict *handlers)
+int init(MODULE_TABLE *handlers)
 {
-    if(dictAdd(handlers,status_url,&handle_status) == DICT_ERR) {
-        printf("[ERR] duplicate service init [%s]\n",status_url);
-        return -1;
-    }
-
+    MODULE_TABLE_add_fixed(handlers,_url,&_handle);
     return 0;
 }
 
-int handle_status(request *req, reply *rep)
+int _handle(request *req, reply *rep)
 {    
     (void)req;
     replyStock(rep,reply_ok,NULL);

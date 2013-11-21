@@ -15,7 +15,11 @@ struct header {
 
 typedef struct hlist_head header_table;
 
-/* 1000 requests + 1000 replies = 2000 * 256 = 512K */
+/* 1024 clients, sizeof(void*) = 8 bytes;
+   1 header table for a request; 1 header table for a reply;
+   HEADER_TABLE_SIZE = 256
+ ==> 1000 clients = 2 * 1024 * 256 * 8 = 4M */
+
 #define HEADER_TABLE_SIZE_BITS 8
 #define HEADER_TABLE_SIZE (1<<HEADER_TABLE_SIZE_BITS)
 #define __hash_adjust(val,bits) (val >> (32 - bits))
@@ -123,9 +127,16 @@ static inline void header_table_print(header_table *ht){
     struct header *h;
 
     __header_table_for_each(ht, i, h, hlist) {
-        printf("%s: %s\n",h->key,h->value);
+        printf("[%s: %s]\n",h->key,h->value);
     }
     char *hfind = "Accept";
     printf("Find: [%s:%s]\n", hfind,header_table_find(ht,hfind));
 }
+
+#undef __hash_adjust
+#undef HEADER_BUCKET
+#undef __header_key_copy
+#undef __header_value_copy
+#undef __header_remove_from_table
+
 #endif

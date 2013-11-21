@@ -29,20 +29,15 @@
 #include <string.h>
 #include <stdio.h>
 #include "status.h"
-#include "lib/dict.h"
 #include "net/http_server.h"
 
 static char *status_url = "/status";
 
 static int handle_status(request *req, reply *rep);
 
-int init(dict *handlers)
+int init(MODULE_TABLE *handlers)
 {
-    if(dictAdd(handlers,status_url,&handle_status) == DICT_ERR) {
-        printf("[ERR] duplicate service init [%s]\n",status_url);
-        return -1;
-    }
-
+    MODULE_TABLE_add_fixed(handlers,status_url,&handle_status);
     return 0;
 }
 
