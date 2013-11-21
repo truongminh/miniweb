@@ -34,11 +34,11 @@
 #include "lib/util.h"
 #include "lib/dicttype.h"
 #include "syslib/tlpi_hdr.h"
+#include "module.h"
 
-static __thread dict* handlers;
+static __thread MODULE_TABLE *handlers;
 static __thread int wid;
 
-typedef int handlerProc(request *req, reply *rep);
 static void loadLib(char *fn, char *initFunc);
 static int loadLibDir(const char* dirname);
 static reply *r_not_found;
@@ -46,7 +46,7 @@ static reply *r_not_found;
 void initRequestHandle(int id)
 {
     wid = id;
-    handlers = dictCreate(&charFunctionDictType, NULL);
+    handlers = MODULE_TABLE_init();
     loadLibDir("mnwlib");
     r_not_found = replyCreate();
     replyStock(r_not_found,reply_not_found,"NOT FOUND");    
@@ -59,10 +59,10 @@ int get_wid()
 
 int requestHandle(request *req, reply *rep)
 {    
-    handlerProc *handler = dictFetchValue(handlers,req->uri);
+    handlerProc *_handler = MODULE_TABLE_find(handlers,req->uri);
     //requestPrint(req);
-    if (handler) {
-        handler(req,rep);
+    if (_handler) {
+        _handler(req,rep);
     } else {
         replyShareBuffer(r_not_found,rep);
     }
@@ -79,7 +79,7 @@ void requestHandleError(request *req, reply *rep) {
 void loadLib(char *fn, char *initFunc)
 {
     void *libHandle; /* Handle for shared library */
-    int (*funcp)(void *); /* Pointer to function with no arguments */
+    miniweb_handler *funcp; /* Pointer to function with no arguments */
     const char *err;
     /* Load the shared library and get a handle for later use */
     libHandle = dlopen(fn, RTLD_LAZY);
@@ -123,7 +123,7 @@ int loadLibDir(const char* dirname)
           {
               sds fn = sdsnew(dirname);
               fn = sdscatprintf(fn, "/%s", ent->d_name);
-              loadLib(fn,"init");
+              loadLib(fn,PLUGIN_INIT);
               sdsfree(fn);
               break;
           }

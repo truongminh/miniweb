@@ -62,7 +62,7 @@ sds replyToBuffer(reply* r) {
         obuf = sdscat(obuf,replyStatusToString(r->status));
         unsigned int i;
         struct header *h;
-        __header_table_for_each(r->headers, i, h, hlist) {
+         __header_table_for_each(r->headers, i, h, hlist) {
             obuf = sdscatprintf(obuf,"%s: %s\r\n",h->key,h->value);
         }
         if(r->content) {

@@ -51,7 +51,6 @@
  */
 
 
-static sds http_content_length_header;
 
 static inline char *copy_string(char *src, int len) {
     char *dst = malloc(len+1);
@@ -60,39 +59,37 @@ static inline char *copy_string(char *src, int len) {
     return dst;
 }
 
-static inline int isusualHeaderKey(char c)
+static inline int _isusual_header_key(char c)
 {
     return isalnum(c) || c == '-';
 }
 
-static inline int isusualValue(char c)
+static inline int _is_usual_value(char c)
 {
     return c > 0 && !iscntrl(c);
 }
 
-void requestInit()
-{
-    http_content_length_header = sdsnew(HTTP_CONTENT_LENGTH_HEADER);
-}
 
-request *requestCreate() {
+request *request_create() {
     request* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
-    r->method = r->uri = r->current_header_key = NULL;
+    r->method = r->uri = r->current_header_name = NULL;
     r->headers = header_table_init();
     r->state = http_method_start;
     r->conremain = 0;
     r->content = NULL;
     r->questionInURI = 0;
+    r->buf_used = 0;
+    r->buf_parsed = 0;
     return r;
 }
 
-void requestFree(request *r) {
+void request_free(request *r) {
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
     header_table_free(r->headers);
     /* current_header and current_value was not added to headers */
-    if(r->current_header_key) free(r->current_header_key);
+    if(r->current_header_name) free(r->current_header_name);
     if(r->content) {
         sdsfree(r->content);
         r->content = NULL;
@@ -100,18 +97,42 @@ void requestFree(request *r) {
     free(r);
 }
 
-char *requestGetHeaderValue(request *r, const char* key){
+char *request_get_header_value(request *r, const char* key){
     return header_table_find(r->headers,key);
 }
 
-void requestReset(request *r){
+void request_reset(request *r){
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
 
-    if(r->current_header_key) free(r->current_header_key);
+    if(r->current_header_name) free(r->current_header_name);
 
-    r->method = r->uri = r->current_header_key = NULL;
+    r->method = r->uri = r->current_header_name = NULL;
+
     header_table_make_empty(r->headers);
+
+#if 0
+    /* Check for NULL character at the end of HTTP request */
+    char *pcur = RBUF_LAST_PARSE(r);
+    char *end = RBUF_LAST_IN(r);
+    while(pcur < end || *pcur) {
+        pcur++;
+    }
+    r->buf_parsed = pcur - r->buf;
+    int remain = r->buf_used - r->buf_parsed;
+    if(remain > 0 ) {
+        printf("not parsed %d\t",remain);
+        printf("next char [%d]\n",*end);
+        /* Use memmove to guarantee correct behavior */
+        memmove(r->buf,pcur,remain); // move remaining data to the begin of buffer
+    }
+
+    r->buf_used = remain;
+    r->buf_parsed = 0;
+#else
+    r->buf_used = 0;
+    r->buf_parsed = 0;
+#endif
 
     r->state = http_method_start;
     r->conremain = 0;
@@ -121,28 +142,32 @@ void requestReset(request *r){
     r->questionInURI = 0;
 }
 
-request_parse_state requestParse(request* r, char* begin, char* end)
+
+request_parse_state request_parse
+(request* r)
 {
     request_parse_state result = parse_not_completed;
-
-    if(unlikely(end - begin > MAX_REQUEST_SIZE)) return parse_error;
     char current;
-    char *buf = r->buf;
-    char *ptr = r->ptr;
-    char *header_key = r->current_header_key;
+    char *pcur = RBUF_LAST_PARSE(r);
+    char *end = RBUF_LAST_IN(r);
+    /* requestParse is called when nread >= 1
+     * Therefore, end is always greater than pcur
+     */
+    char *begin = pcur;
+    char *header_name = r->current_header_name;
     char *header_value = NULL;
     http_state state = r->state;
     do
     {
-        current = *begin;
+        current = *pcur;
         switch (state)
         {
         case http_method_start:
             if (likely(isalpha(current)))
-            {
+            {                
                 state = http_method;
-                ptr = buf;
-                *ptr++ = current;
+                begin = pcur;
+                //*ptr++ = current;
             }
             else
             {                
@@ -152,13 +177,13 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_method:
             if (current == ' ')
             {
-                r->method = copy_string(buf,ptr-buf);
-                ptr = buf;
+                r->method = copy_string(begin,pcur-begin);
                 state = http_uri;
+                begin = pcur + 1;
             }
             else if (likely(isalpha(current)))
             {
-                *ptr++ = current;
+                //*begin++ = current;
             }
             else
             {
@@ -168,8 +193,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_uri:
             if (current == ' ')
             {
-                r->uri = copy_string(buf,ptr-buf);
-                ptr=buf;
+                r->uri = copy_string(begin,pcur-begin);
                 state = http_version_h;
             }
             else if (unlikely(iscntrl(current)))
@@ -179,11 +203,11 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             else
             {
                 if(current == '?') {
-                    *ptr++ ='\0';
-                    r->questionInURI = ptr-buf;
+                    *pcur ='\0';
+                    r->questionInURI = pcur - begin;
                 }
                 else {
-                    *ptr++=current;
+                    // *begin++=current;
                 }
             }
             break;
@@ -299,7 +323,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_expecting_newline_1:
             if (likely(current == '\n'))
             {
-                state = http_header_line_start;
+                state = http_header_line_start;                
             }
             else
             {
@@ -308,27 +332,24 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             break;
 
         case http_header_line_start:
-            if (current == '\r')
+            if (likely(_isusual_header_key(current)))
             {
-                /* new line after new line, meaning all headeres are parsed
-                 * header_key and header_value are assigned to sdsempty
-                 * to simplify the treatment of current_header fields in the request
-                 * In particular, assigning the values to sdsempty(),
-                 * there is no need to check NULL in requestReset and requestFree
-                */
-                state = http_expecting_newline_3;
+                //*begin++=current;
+                state = http_header_name;
+                begin = pcur;
             }
+            else if (current == '\r')
+            {
+                /* new line after new line, meaning all headers are parsed */
+                state = http_expecting_newline_3; /* \r\n\r expect \n */
+            }
+            /*
             else if (current == ' ' || current == '\t')
             {
-                header_key = copy_string(buf,ptr-buf);
-                ptr = buf;
+                //header_key = copy_string(begin, cur-begin);
                 state = http_header_lws;
             }
-            else if (likely(isusualHeaderKey(current)))
-            {
-                *ptr++=current;
-                state = http_header_name;
-            }
+            */
             else
             {
                 result =  parse_error;
@@ -338,20 +359,20 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_header_lws:
             if (current == '\r')
             {
-                header_value = copy_string(buf,ptr-buf);
-                header_table_add_fixed(r->headers,header_key,header_value);
-                header_key = NULL;
-                ptr=buf;
+                header_value = copy_string(begin, pcur-begin);
+                header_table_add_fixed(r->headers,header_name,header_value);
+                header_name = NULL;
                 state = http_expecting_newline_2;
             }
-            else if (isspace(current)) /* ignore space */
+            else if (isspace(current)) /* ignore space bfore header_name */
             {
                 ;
             }
-            else if (likely(isusualValue(current)))
+            else if (likely(_is_usual_value(current)))
             {
                 state = http_header_value;
-                *ptr++=current;
+                begin = pcur + 1;
+                //*begin++=current;
             }
             else {
                 result =  parse_error;
@@ -361,13 +382,12 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_header_name:
             if (current == ':') // end of header_name
             {
-                header_key = copy_string(buf,ptr-buf);
-                ptr = buf;
-                state = http_space_before_header_value;
+                header_name = copy_string(begin, pcur-begin);
+                state = http_space_before_header_value;                
             }
-            else if (likely(isusualHeaderKey(current)))
+            else if (likely(_isusual_header_key(current)))
             {
-                *ptr++ = current;
+                //*begin++ = current;
             }
             else
             {
@@ -379,6 +399,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             if (likely(current == ' '))
             {
                 state = http_header_value;
+                begin = pcur + 1;
             }
             else
             {
@@ -387,17 +408,17 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             break;
 
         case http_header_value:
-            if (current == '\r')
+            if (likely(_is_usual_value(current)))
             {
-                header_value = copy_string(buf,ptr-buf);
-                header_table_add_fixed(r->headers,header_key,header_value);
-                header_key = NULL;
-                ptr=buf;
-                state = http_expecting_newline_2;
+                //*begin++=current;
             }
-            else if (likely(isusualValue(current)))
+            else if (current == '\r')
             {
-                *ptr++=current;
+                /* <header_key><:><space><header_value><\r\n>*/
+                header_value = copy_string(begin, pcur-begin);
+                header_table_add_fixed(r->headers,header_name,header_value);
+                header_name = NULL;
+                state = http_expecting_newline_2;
             }
             else
             {                
@@ -408,7 +429,7 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         case http_expecting_newline_2:
             if (likely(current == '\n'))
             {
-                state = http_header_line_start;
+                state = http_header_line_start;                
             }
             else
             {
@@ -441,15 +462,15 @@ request_parse_state requestParse(request* r, char* begin, char* end)
             break;
         case http_content:
             if(!r->content) r->content = sdsempty();            
-            int len = min(r->conremain, end - begin + 1);
-            r->content = sdscatlen(r->content, begin, len);
+            int len = min(r->conremain, end - pcur + 1);
+            r->content = sdscatlen(r->content, pcur, len);
             r->conremain -= len;
             if(r->conremain == 0){
                 result =  parse_completed;
             }
             else {
                 /* All data was copied to r->content */
-                begin = end;
+                pcur = end;
             }
             break;
         default:
@@ -459,9 +480,9 @@ request_parse_state requestParse(request* r, char* begin, char* end)
         if (result) {
             break;
         }
-    } while(++begin < end);
-    r->ptr = ptr;
-    r->current_header_key = header_key;    
+    } while(++pcur < end);
+    r->buf_parsed = pcur - r->buf;
+    r->current_header_name = header_name;
     r->state = state;
     return  result;
 }
@@ -474,6 +495,6 @@ void requestPrint(request *r){
     if(r->content) {
         printf("Content: %s\n",r->content);
     }
-    printf("Current Key: %s\n",r->current_header_key);    
+    printf("Current Key: %s\n",r->current_header_name);
     printf("STATE: %d\n",r->state);
 }

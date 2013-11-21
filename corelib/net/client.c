@@ -20,7 +20,7 @@ http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
     c->fd = fd;
     c->rep = replyCreate();
     c->bufpos = 0;
-    c->req = requestCreate();
+    c->req = request_create();
     c->lastinteraction = el->lastSecond;
     c->ip = strdup(ip);
     c->port = port;
@@ -34,9 +34,11 @@ http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
 
 
 void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
-    char *buf = el->buf;
+    request *req = c->req;
+    char *buf = RBUF_LAST_IN(req);
+    int buf_free = RBUF_FREE(req);
     int nread;
-    nread = read(fd, buf, CCACHE_IOBUF_LEN);
+    nread = read(fd, buf, buf_free);
     if (nread == -1) {
         if (errno == EAGAIN) { /* try again */
             return;
@@ -50,23 +52,24 @@ void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
         return;
     }
     else {
+        RBUF_INCREASE(req,nread);
         //printf("Read Request: %.2lf \n", (double)(clock()));
         c->lastinteraction = el->lastSecond;
         list_move(&c->elNode, &el->clients);
         /* NOTICE: nread or nread-1 */
-        switch(requestParse(c->req,buf,buf+nread)){
+        switch(request_parse(req)){
         case parse_not_completed:
             break;
         case parse_completed:
         {
-            requestHandle(c->req,c->rep);
+            requestHandle(req,c->rep);
             el->processed++;
             if (_installWriteEvent(el, c) != CLIENT_OK) {
                 freeClient(c);
                 return;
             }
             /* For HANDLE_OK there is nothing to do */
-            // if(handle_result == HANDLER_ERR) requestHandleError(c->req,c->rep);
+            // if(handle_result == HANDLER_ERR) requestHandleError(r,c->rep);
                 break;
         }
         case parse_error:
@@ -75,7 +78,7 @@ void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
                 freeClient(c);
                 return;
             }
-            requestHandleError(c->req,c->rep);
+            requestHandleError(req,c->rep);
             break;
         default:
             break;
@@ -125,7 +128,7 @@ void freeClient(http_client *c) {
     /* Release memory */
     if(c->ip) free(c->ip);
     replyFree(c->rep);
-    requestFree(c->req);
+    request_free(c->req);
     __list_del_entry(&c->elNode);
     free(c);
 }
@@ -136,7 +139,7 @@ void freeClient(http_client *c) {
 void resetClient(http_client *c) {
     c->bufpos = 0;
     replyReset(c->rep);
-    requestReset(c->req);
+    request_reset(c->req);
 }
 
 
