@@ -37,7 +37,7 @@
 //#include "lib/adlist.h"
 #include "lib/list.h"
 #include "lib/kfifo.h"
-#include "ccache_config.h"
+#include "miniweb_config.h"
 
 #define AE_OK 0
 #define AE_ERR -1

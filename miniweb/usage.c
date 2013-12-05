@@ -7,7 +7,7 @@
 #include <malloc.h>
 
 #include "usage.h"
-#include "ccache_config.h"
+#include "miniweb_config.h"
 
 /* These enum values cannot possibly conflict with the option values
    ordinarily used by commands, including CHAR_MAX + 1, etc.  Avoid

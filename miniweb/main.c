@@ -29,7 +29,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <dlfcn.h>
-#include "ccache_config.h"
+#include "miniweb_config.h"
 #include "signal_handler.h"
 #include "usage.h"
 #include "net/http_server.h"

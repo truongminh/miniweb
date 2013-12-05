@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include <errno.h>
-#include "ccache_config.h"
+#include "miniweb_config.h"
 #include "lib/sds.h"    /* Dynamic safe strings */
 #include "lib/util.h"
 #include "http/reply.h"
