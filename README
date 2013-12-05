@@ -1,7 +1,7 @@
 HOW TO START
 $./autogen.sh
 $cd build
-$./miniweb --port 8888
+$LD_LIBRARY_PATH=./lib ./miniweb --port 8888
 
 libcore.so: http core and various util functions
 mnwblib/*.so : request handlers
