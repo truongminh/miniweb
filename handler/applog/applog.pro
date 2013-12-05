@@ -3,7 +3,7 @@ CONFIG += plugin
 CONFIG -= app_bundle
 CONFIG -= qt
 
-TARGET = ../build/mnwlib/applog
+TARGET = ../../build/handler/applog
 
 SOURCES += \
     applog.c
@@ -11,7 +11,7 @@ SOURCES += \
 HEADERS += \
     applog.h
 
-INCLUDEPATH += ../include
+INCLUDEPATH += ../../include
 
-LIBS += -lpthread ../build/libcore.so
+LIBS += -lpthread -L../../build/lib/ -lcore
 

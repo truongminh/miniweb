@@ -4,16 +4,13 @@ CONFIG += ordered
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SUBDIRS = corelib \
-          app \
-          applog \
-          status \
-          ok
+SUBDIRS = lib \
+          miniweb \
+          handler
 
-app.depends = corelib
-applog.depends = corelib
-status.depends = corelib
-ok.depends = corelib
+
+miniweb.depends = lib
+handler.depends = lib
 
 OTHER_FILES += README \
     qmake_to_Makefile.sh \

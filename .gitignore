@@ -11,6 +11,7 @@ Makefile.in
 *.a
 *~
 *.pro.user
+*.zip
 
 /build
 # Various auto-tools artifacts

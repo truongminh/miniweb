@@ -3,7 +3,7 @@ CONFIG += plugin
 CONFIG -= app_bundle
 CONFIG -= qt
 
-TARGET = ../build/mnwlib/ok
+TARGET = ../../build/handler/ok
 
 SOURCES += \
     ok.c
@@ -11,7 +11,8 @@ SOURCES += \
 HEADERS += \
     ok.h
 
-INCLUDEPATH += ../include
+INCLUDEPATH += ../../include
 
-LIBS += -lpthread ../build/libcore.so
+LIBS += -lpthread -L../../build/lib/ -lcore
+
 

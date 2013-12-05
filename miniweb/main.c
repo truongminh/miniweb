@@ -36,44 +36,13 @@
 
 struct mnw_options *options;
 
-void loadLib(char *fn, char *initFunc)
-{
-    void *libHandle; /* Handle for shared library */
-    int (*funcp)(char *, int); /* Pointer to function with no arguments */
-    const char *err;
-    /* Load the shared library and get a handle for later use */
-    libHandle = dlopen(fn, RTLD_LAZY);
-    if (libHandle == NULL) {
-        printf("dlopen: %s", dlerror());
-        return;
-    }
-    /* Search library for symbol */
-    (void) dlerror(); /* Clear dlerror() */
-    funcp = dlsym(libHandle, initFunc);
-    err = dlerror();
-
-    if (err != NULL) {
-        printf("dlsym: %s", err);
-        return;
-    }
-    /* If the address returned by dlsym() is non-NULL, try calling it
-    as a function that takes no arguments */
-    if (funcp == NULL)
-        printf("%s is NULL\n", initFunc);
-    else {
-        printf("[OK] [%s] loaded\n", fn);
-        (*funcp)(options->addr,options->port);
-    }
-    /* dlclose(libHandle); Do not close the library */
-}
-
 int main(int argc, char* argv[])
 {
      char *search = strchr(argv[0],'/');
      program_name = (search == NULL)? argv[0]: (search+1);
      setupSignalHandlers();
      options = getOptions(argc,argv);
-     loadLib("./libcore.so","initServer");
+     initServer(options->addr,options->port);
      return 0;
 }
 

@@ -7,7 +7,7 @@ CONFIG -= qt
 
 #CONFIG += staticlib
 
-TARGET = ../build/core
+TARGET = ../../build/lib/core
 
 SOURCES += \
     lib/util.c \
@@ -18,11 +18,6 @@ SOURCES += \
     lib/dicttype.c \
     lib/dict.c \
     lib/adlist.c \
-    net/http_server.c \
-    net/client.c \
-    net/anet.c \
-    net/ae.c \
-    http/request_handler.c \
     http/request.c \
     http/reply.c \
     syslib/unix_sockets.c \
@@ -51,6 +46,6 @@ SOURCES += \
     syslib/become_daemon.c \
     syslib/alt_functions.c
 
-INCLUDEPATH += ../include ../include/syslib
+INCLUDEPATH += ../../include ../../include/syslib
 LIBS += -lpthread -ldl
 

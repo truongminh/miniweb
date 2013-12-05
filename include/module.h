@@ -12,6 +12,7 @@
 #include "lib/list.h"
 #include "lib/hash.h"
 
+const char *MODULE_DIR = "./handler";
 
 typedef int handlerProc(request *req, reply *rep);
 
@@ -141,6 +142,28 @@ static inline void MODULE_TABLE_print(MODULE_TABLE *ht){
     }
     char *hfind = "Accept";
     printf("Find: [%s:%p]\n", hfind,MODULE_TABLE_find(ht,hfind));
+}
+
+#define __BUF_SIZE 1024
+static inline char *MODULE_TABLE_list(MODULE_TABLE *ht){
+    unsigned int i;
+    struct module_node *h;
+    char *buffer = malloc(__BUF_SIZE);
+    char *ptr = buffer;
+    int len;
+    __MODULE_TABLE_for_each(ht, i, h, hlist) {
+        len = strlen(h->key);
+        if (ptr - buffer + len > __BUF_SIZE - 2) {
+            /* \0 and ? only two char is guaranteed */
+            *ptr++ = '?';
+            break;
+        }
+        memcpy(ptr,h->key,len);
+        ptr += len;
+        *ptr++ = '\n';
+    }
+    *ptr++ = '\0';
+    return buffer;
 }
 
 #undef __module_node_key_copy

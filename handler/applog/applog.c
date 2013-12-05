@@ -40,7 +40,6 @@
 #include "lib/sds.h"
 #include "lib/compile.h"
 #include "syslib/tlpi_hdr.h"
-#include "net/http_server.h"
 #include "lib/adlist.h"
 
 static char *_uri = "/applog";

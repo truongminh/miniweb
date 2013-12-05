@@ -185,7 +185,7 @@ static void aeGetTime(long *seconds, long *milliseconds)
 void aeProcessEvents(ae_ev_loop *eventLoop)
 {
 
-        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,2);
+        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,0);
         if(numevents < 1) {
             /* No waiting client */
             usleep(10000);

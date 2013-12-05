@@ -34,6 +34,7 @@
 #include "lib/util.h"
 #include "lib/dicttype.h"
 #include "syslib/tlpi_hdr.h"
+#include "net/http_server.h"
 #include "module.h"
 
 static __thread MODULE_TABLE *handlers;
@@ -43,11 +44,49 @@ static void loadLib(char *fn, char *initFunc);
 static int loadLibDir(const char* dirname);
 static reply *r_not_found;
 
+/********************************************************************/
+/* State Handler */
+static char* __state_uri = "/__state";
+static int __state_handler(request *req, reply *rep)
+{
+    (void)req;
+    char buf[128];
+    sprintf(buf,"%d,%d\n",numConcurrentFD(),numRequestsPerSecond());
+    replySetContent(rep,buf);
+    return 0;
+}
+
+static void add_state_handler(MODULE_TABLE *handlers)
+{
+    MODULE_TABLE_add_fixed(handlers,__state_uri,&__state_handler);
+}
+
+/********************************************************************/
+/* State Handler */
+static char* __list_uri = "/__list";
+static int __list_handler(request *req, reply *rep)
+{
+    (void)req;
+    char *buf = MODULE_TABLE_list(handlers);
+    replySetContent(rep,buf);
+    free(buf);
+    return 0;
+}
+
+static void add_list_handler(MODULE_TABLE *handlers)
+{
+    MODULE_TABLE_add_fixed(handlers,__list_uri,&__list_handler);
+}
+
+/********************************************************************/
+
 void initRequestHandle(int id)
 {
     wid = id;
     handlers = MODULE_TABLE_init();
-    loadLibDir("mnwlib");
+    add_state_handler(handlers);
+    add_list_handler(handlers);
+    loadLibDir(MODULE_DIR);
     r_not_found = replyCreate();
     replyStock(r_not_found,reply_not_found,"NOT FOUND");    
 }
@@ -77,7 +116,7 @@ void requestHandleError(request *req, reply *rep) {
 }
 
 void loadLib(char *fn, char *initFunc)
-{
+{    
     void *libHandle; /* Handle for shared library */
     miniweb_handler *funcp; /* Pointer to function with no arguments */
     const char *err;
