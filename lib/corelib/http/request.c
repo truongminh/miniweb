@@ -107,15 +107,15 @@ void request_query_parse(request *r) {
     if(r->questionInURI) {
         const char* query = r->uri + r->questionInURI + 1;
         // param_seperator
-        const char *seperators = "&=";
+        char seperator = '=';
         register const char *ptr = query;
         char* _key = NULL;
         const char* ptrsep;
         r->queries = table8cc_init();
-        do {
-            ptrsep = seperators; // reset ptrsep
-            while(*ptr!=*ptrsep && *ptrsep) ptrsep++; // compare every char
-            if(!*ptrsep) continue; // not found
+        for(;;){
+            seperator = (_key == NULL)? '=':'&';
+            while(*ptr && *ptr!=seperator) ptr++;
+            if(!*ptr) break; // finish
             if(_key) { // have key and value
                 table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
                 _key = NULL;
@@ -124,10 +124,11 @@ void request_query_parse(request *r) {
                 _key = copy_string(query,ptr-query);
             }
             query = ptr+1;
-        }while (*++ptr);
+        };
         if(_key) { // last value
             table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
         }
+        table8cc_print(r->queries);
     }
 }
 
