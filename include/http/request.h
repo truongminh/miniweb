@@ -67,9 +67,13 @@ typedef enum
 }  http_state;
 
 /* efficient memory alignment */
+#if 0
 #define RBUF_SIZE (MAX_REQUEST_SIZE \
     - 4 *sizeof(char*) - 8 * sizeof(int) - sizeof(header_table*) \
     - sizeof(sds) - sizeof(http_state) - 16)
+#else
+#define RBUF_SIZE MAX_REQUEST_SIZE
+#endif
 
 #define RBUF_FREE(r) (RBUF_SIZE - r->buf_used)
 #define RBUF_LAST_IN(r) (r->buf + r->buf_used)
@@ -90,7 +94,7 @@ typedef struct
     int conremain;
     int questionInURI;
 
-    header_table *headers;
+    table8cc *headers;
     sds content;
 
     /* The current state of the parser. */

@@ -74,7 +74,7 @@ request *request_create() {
     request* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->method = r->uri = r->current_header_name = NULL;
-    r->headers = header_table_init();
+    r->headers = table8cc_init();
     r->state = http_method_start;
     r->conremain = 0;
     r->content = NULL;
@@ -87,7 +87,7 @@ request *request_create() {
 void request_free(request *r) {
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
-    header_table_free(r->headers);
+    table8cc_free(r->headers);
     /* current_header and current_value was not added to headers */
     if(r->current_header_name) free(r->current_header_name);
     if(r->content) {
@@ -98,7 +98,7 @@ void request_free(request *r) {
 }
 
 char *request_get_header_value(request *r, const char* key){
-    return header_table_find(r->headers,key);
+    return table8cc_find(r->headers,key);
 }
 
 void request_reset(request *r){
@@ -109,7 +109,7 @@ void request_reset(request *r){
 
     r->method = r->uri = r->current_header_name = NULL;
 
-    header_table_make_empty(r->headers);
+    table8cc_make_empty(r->headers);
 
 #if 0
     /* Check for NULL character at the end of HTTP request */
@@ -360,7 +360,7 @@ request_parse_state request_parse
             if (current == '\r')
             {
                 header_value = copy_string(begin, pcur-begin);
-                header_table_add_fixed(r->headers,header_name,header_value);
+                table8cc_add_fixed(r->headers,header_name,header_value);
                 header_name = NULL;
                 state = http_expecting_newline_2;
             }
@@ -416,7 +416,7 @@ request_parse_state request_parse
             {
                 /* <header_key><:><space><header_value><\r\n>*/
                 header_value = copy_string(begin, pcur-begin);
-                header_table_add_fixed(r->headers,header_name,header_value);
+                table8cc_add_fixed(r->headers,header_name,header_value);
                 header_name = NULL;
                 state = http_expecting_newline_2;
             }
@@ -441,7 +441,7 @@ request_parse_state request_parse
             if (likely(current == '\n')) {
                 /* All headers have been parsed */
                 // Check "Content-Length" header                
-                char *str = header_table_find(r->headers,
+                char *str = table8cc_find(r->headers,
                                               HTTP_CONTENT_LENGTH_HEADER);
                 if(str) {
                     int content_length = atoi(str);
@@ -490,7 +490,7 @@ request_parse_state request_parse
 
 void requestPrint(request *r){
     printf("%s %s\n",r->method,r->uri);
-    header_table_print(r->headers);
+    table8cc_print(r->headers);
 
     if(r->content) {
         printf("Content: %s\n",r->content);

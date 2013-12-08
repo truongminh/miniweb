@@ -63,7 +63,7 @@ typedef struct reply_t
 {
     reply_status_type status;
     /// The headers to be included in the reply.
-    header_table *headers;
+    table8cc *headers;
     /// The content to be sent in the reply.
     sds content;
     /// The output buffer could be used in cause we want to cache the reply

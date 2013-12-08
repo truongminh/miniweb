@@ -34,7 +34,7 @@ reply* replyCreate() {
     reply* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->status = reply_ok;
-    r->headers = header_table_init();
+    r->headers = table8cc_init();
     r->obuf = NULL;
     r->content = sdsempty();
     r->isCached = 0;
@@ -42,14 +42,14 @@ reply* replyCreate() {
 }
 
 void replyFree(reply* r) {
-    header_table_free(r->headers);
+    table8cc_free(r->headers);
     sdsfree(r->content);
     if(r->obuf&&r->isCached == 0) sdsfree(r->obuf);
     free(r);
 }
 
 void replyReset(reply *r) {
-    header_table_make_empty(r->headers);
+    table8cc_make_empty(r->headers);
     sdsclear(r->content);
     if(r->obuf && r->isCached == 0) sdsfree(r->obuf);
     r->obuf = NULL;
@@ -61,8 +61,8 @@ sds replyToBuffer(reply* r) {
         sds obuf = sdsempty();
         obuf = sdscat(obuf,replyStatusToString(r->status));
         unsigned int i;
-        struct header *h;
-         __header_table_for_each(r->headers, i, h, hlist) {
+        struct table8cc_entry *h;
+         __table8xx_for_each(r->headers, i, h, hlist) {
             obuf = sdscatprintf(obuf,"%s: %s\r\n",h->key,h->value);
         }
         if(r->content) {
@@ -82,7 +82,7 @@ void replyShareBuffer(reply *src, reply *dst)
 }
 
 void replyAddHeader(reply *r, const char *name, const char *value) {
-    return header_table_add_fixed(r->headers,strdup(name),strdup(value));
+    return table8cc_add_fixed(r->headers,strdup(name),strdup(value));
 }
 
 void replySetContent(reply *r , char* content){
