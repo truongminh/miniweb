@@ -110,18 +110,18 @@ void request_query_parse(request *r) {
         char seperator = '=';
         register const char *ptr = query;
         char* _key = NULL;
-        const char* ptrsep;
         r->queries = table8cc_init();
         for(;;){
-            seperator = (_key == NULL)? '=':'&';
             while(*ptr && *ptr!=seperator) ptr++;
-            if(!*ptr) break; // finish
+            if(unlikely(*ptr == '\0')) break; // finish
             if(_key) { // have key and value
                 table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
                 _key = NULL;
+                seperator = '=';
             }
             else {
                 _key = copy_string(query,ptr-query);
+                seperator = '&';
             }
             query = ptr+1;
         };
