@@ -34,6 +34,7 @@
 #define MAX_REQUEST_SIZE 8096
 #define HTTP_CONTENT_LENGTH_HEADER "Content-Length"
 #define HTTP_POST_METHOD "POST"
+#define REQUEST_BUFFER_ALIGNED
 
 typedef enum {
     parse_not_completed = 0,
@@ -67,9 +68,9 @@ typedef enum
 }  http_state;
 
 /* efficient memory alignment */
-#if 0
+#ifdef REQUEST_BUFFER_ALIGNED
 #define RBUF_SIZE (MAX_REQUEST_SIZE \
-    - 4 *sizeof(char*) - 8 * sizeof(int) - 2 * sizeof(header_table*) \
+    - 4 *sizeof(char*) - 8 * sizeof(int) - 2 * sizeof(table8cc*) \
     - sizeof(sds) - sizeof(http_state) - 16)
 #else
 #define RBUF_SIZE MAX_REQUEST_SIZE
@@ -107,9 +108,45 @@ typedef struct
 
 request *request_create();
 void request_free(request *r);
+
+/**
+ * request_get_header_value - find the value of a given header
+ * @r: request to find
+ * @key: key to find
+ * return: the pointer to the value of the given header of the request
+ *          or NULL if not found
+ * NOTICE: caller must not free the returned pointer
+ */
 char *request_get_header_value(request *r, const char *key);
+
+/**
+ * request_query_parse - parse query string
+ * @r: request to parse
+ */
 void request_query_parse(request *r);
+
+
+/**
+ * request_query_find - find the value of a given key in query string
+ * @r: request to find
+ * @key: key to find
+ * return: the pointer to the value of the given key in the query table of the request
+ *          or NULL if not found
+ * NOTICE: request_query_parse must be called first
+ *         caller must not free the returned pointer
+ */
 char *request_query_find(request *r, const char *key);
+
+/**
+ * request_query_find_one - find the value of a given key in query string
+ * @r: request to find
+ * @key: key to find
+ * @keylen: len of the given key
+ * return: the value of the given key or NULL if not found
+ * NOTICE: caller must free the returned pointer explicitly
+ */
+char *request_query_find_one(request *r, const char* key, int keylen);
+
 void request_reset(request *r);
 request_parse_state request_parse(request* r);
 void requestPrint(request *r);

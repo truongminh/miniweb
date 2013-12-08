@@ -139,6 +139,45 @@ char *request_query_find(request *r, const char* key){
     return NULL;
 }
 
+/**
+ * request_query_find_one - find the value of a given key in query string
+ * @r: request to find
+ * @key: key to find
+ * @keylen: len of the given key
+ * return: the value of the given key or NULL if not found
+ */
+
+char *request_query_find_one(request *r, const char* key, int keylen) {
+    if(r->questionInURI) {
+        const char* query = r->uri + r->questionInURI + 1;
+        // param_seperator
+        char seperator = '=';
+        register const char *ptr = query;
+        const char* _key = NULL;
+        int _keylen;
+        int found = 0;
+        for(;;){
+            while(*ptr && *ptr!=seperator) ptr++;
+            if(unlikely(*ptr == '\0')) break; // finish
+            if(_key) { // have key and value
+                if(found) return copy_string(query,ptr-query);
+                _key = NULL;
+                seperator = '=';
+            }
+            else {
+                _key = query; _keylen = ptr-query;
+                found = (keylen == _keylen)? (memcmp(_key,key,keylen) == 0) : 0;
+                seperator = '&';
+            }
+            query = ptr+1;
+        };
+        if(found) { // last value
+            return copy_string(query,ptr-query);
+        }
+    }
+    return NULL;
+}
+
 void request_reset(request *r){
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
