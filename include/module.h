@@ -1,6 +1,8 @@
 #ifndef MODULE_H_INCLUDED
 #define MODULE_H_INCLUDED
 
+#define MINIWEB_INTERNAL __attribute__ ((error("This function is not available for module")))
+
 #include "http/request.h"
 #include "http/reply.h"
 #include "lib/dict.h"
