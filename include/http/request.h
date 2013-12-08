@@ -69,7 +69,7 @@ typedef enum
 /* efficient memory alignment */
 #if 0
 #define RBUF_SIZE (MAX_REQUEST_SIZE \
-    - 4 *sizeof(char*) - 8 * sizeof(int) - sizeof(header_table*) \
+    - 4 *sizeof(char*) - 8 * sizeof(int) - 2 * sizeof(header_table*) \
     - sizeof(sds) - sizeof(http_state) - 16)
 #else
 #define RBUF_SIZE MAX_REQUEST_SIZE
@@ -93,7 +93,7 @@ typedef struct
     int version_minor;
     int conremain;
     int questionInURI;
-
+    table8cc *queries;
     table8cc *headers;
     sds content;
 
@@ -108,6 +108,8 @@ typedef struct
 request *request_create();
 void request_free(request *r);
 char *request_get_header_value(request *r, const char *key);
+void request_query_parse(request *r);
+char *request_query_find(request *r, const char *key);
 void request_reset(request *r);
 request_parse_state request_parse(request* r);
 void requestPrint(request *r);

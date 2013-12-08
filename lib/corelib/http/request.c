@@ -52,7 +52,7 @@
 
 
 
-static inline char *copy_string(char *src, int len) {
+static inline char *copy_string(const char *src, int len) {
     char *dst = malloc(len+1);
     memcpy(dst,src,len);
     dst[len] = '\0';
@@ -79,6 +79,7 @@ request *request_create() {
     r->conremain = 0;
     r->content = NULL;
     r->questionInURI = 0;
+    r->queries = NULL;
     r->buf_used = 0;
     r->buf_parsed = 0;
     return r;
@@ -88,6 +89,7 @@ void request_free(request *r) {
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
     table8cc_free(r->headers);
+    if(r->queries) table8cc_free(r->queries);
     /* current_header and current_value was not added to headers */
     if(r->current_header_name) free(r->current_header_name);
     if(r->content) {
@@ -101,6 +103,41 @@ char *request_get_header_value(request *r, const char* key){
     return table8cc_find(r->headers,key);
 }
 
+void request_query_parse(request *r) {
+    if(r->questionInURI) {
+        const char* query = r->uri + r->questionInURI + 1;
+        // param_seperator
+        const char *seperators = "&=";
+        register const char *ptr = query;
+        char* _key = NULL;
+        const char* ptrsep;
+        r->queries = table8cc_init();
+        do {
+            ptrsep = seperators; // reset ptrsep
+            while(*ptr!=*ptrsep && *ptrsep) ptrsep++; // compare every char
+            if(!*ptrsep) continue; // not found
+            if(_key) { // have key and value
+                table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
+                _key = NULL;
+            }
+            else {
+                _key = copy_string(query,ptr-query);
+            }
+            query = ptr+1;
+        }while (*++ptr);
+        if(_key) { // last value
+            table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
+        }
+    }
+}
+
+char *request_query_find(request *r, const char* key){
+    if(r->queries) {
+        return table8cc_find(r->queries,key);
+    }
+    return NULL;
+}
+
 void request_reset(request *r){
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
@@ -110,7 +147,7 @@ void request_reset(request *r){
     r->method = r->uri = r->current_header_name = NULL;
 
     table8cc_make_empty(r->headers);
-
+    if(r->queries) table8cc_make_empty(r->queries);
 #if 0
     /* Check for NULL character at the end of HTTP request */
     char *pcur = RBUF_LAST_PARSE(r);

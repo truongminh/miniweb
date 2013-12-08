@@ -122,15 +122,15 @@ static inline char *table8cc_find(table8cc* ht, const char *key) {
 }
 
 static inline void table8cc_print(table8cc *ht){
-    printf("Headers:\n");
+    printf("Table: \n");
     unsigned int i;
     struct table8cc_entry *h;
 
     __table8xx_for_each(ht, i, h, hlist) {
         printf("[%s: %s]\n",h->key,h->value);
     }
-    char *hfind = "Accept";
-    printf("Find: [%s:%s]\n", hfind,table8cc_find(ht,hfind));
+    //char *hfind = "Accept";
+    //printf("Find: [%s:%s]\n", hfind,table8cc_find(ht,hfind));
 }
 
 #undef __hash_adjust
