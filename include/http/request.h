@@ -31,18 +31,25 @@
 #include "lib/sds.h"
 #include "lib/header.h"
 
+#define MINIWEB_EXPORT
+#define MINIWEB_HIDDEN // __attribute__ ((visibility("hidden")))
+
+/* GCC: the hidden attribute makes the symbol available across all source code
+files that compose the shared library, but prevents it from being visible outside
+the library */
+
 #define MAX_REQUEST_SIZE 8096
 #define HTTP_CONTENT_LENGTH_HEADER "Content-Length"
 #define HTTP_POST_METHOD "POST"
 #define REQUEST_BUFFER_ALIGNED
 
-typedef enum {
+MINIWEB_HIDDEN typedef enum {
     parse_not_completed = 0,
     parse_completed = 1,
     parse_error = 2
 } request_parse_state;
 
-typedef enum
+MINIWEB_HIDDEN typedef enum
 {
   http_method_start,
   http_method,
@@ -106,49 +113,78 @@ typedef struct
     int buf_parsed;
 } request;
 
-request *request_create();
-void request_free(request *r);
+
+/**
+ * request_create - allocate and initialize a request
+ * @return: the new request
+ */
+MINIWEB_HIDDEN request *request_create();
+
+/**
+ * request_free - free a request
+ * @r: request to be freed
+ */
+MINIWEB_HIDDEN void request_free(request *r);
 
 /**
  * request_get_header_value - find the value of a given header
  * @r: request to find
  * @key: key to find
- * return: the pointer to the value of the given header of the request
+ * @return: the pointer to the value of the given header of the request
  *          or NULL if not found
  * NOTICE: caller must not free the returned pointer
  */
-char *request_get_header_value(request *r, const char *key);
+MINIWEB_EXPORT char *request_get_header_value(request *r, const char *key);
 
 /**
  * request_query_parse - parse query string
  * @r: request to parse
  */
-void request_query_parse(request *r);
+MINIWEB_EXPORT void request_query_parse(request *r);
 
 
 /**
  * request_query_find - find the value of a given key in query string
  * @r: request to find
  * @key: key to find
- * return: the pointer to the value of the given key in the query table of the request
+ * return: the value of the given key in the query table of the request
  *          or NULL if not found
- * NOTICE: request_query_parse must be called first
- *         caller must not free the returned pointer
+ * NOTICE: this function uses an internal query table,
+ *         so request_query_parse must be called first and
+ *         the caller must not free the returned pointer
+ * If you don't want to call request_query_parse first,
+ * use the request_query_find_one function.
  */
-char *request_query_find(request *r, const char *key);
+MINIWEB_EXPORT char *request_query_find(request *r, const char *key);
 
 /**
  * request_query_find_one - find the value of a given key in query string
  * @r: request to find
  * @key: key to find
  * @keylen: len of the given key
- * return: the value of the given key or NULL if not found
+ * @return: the value of the given key or NULL if not found
  * NOTICE: caller must free the returned pointer explicitly
  */
-char *request_query_find_one(request *r, const char* key, int keylen);
+MINIWEB_EXPORT char *request_query_find_one(request *r, const char* key, int keylen);
 
-void request_reset(request *r);
-request_parse_state request_parse(request* r);
-void requestPrint(request *r);
+/**
+ * request_reset - reset the request to its initial state
+ * @r: request to be reset
+ */
+MINIWEB_HIDDEN void request_reset(request *r);
+
+/**
+ * request_parse - parse http request into fields
+ * @r: request to parse
+ * @return: result of parsing,
+ *          which should be incompleted, completed or error
+ */
+MINIWEB_HIDDEN request_parse_state request_parse(request* r);
+
+/**
+ * request_print - print a request
+ * @r: request to print
+ */
+MINIWEB_HIDDEN void requestPrint(request *r);
 
 #endif
