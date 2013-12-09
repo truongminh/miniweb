@@ -27,10 +27,9 @@
 
 #include "http/reply.h"
 #include "malloc.h"
-#include "lib/dicttype.h"
 
 
-reply* replyCreate() {
+reply* _reply_create() {
     reply* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->status = reply_ok;
@@ -41,14 +40,14 @@ reply* replyCreate() {
     return r;
 }
 
-void replyFree(reply* r) {
+void _reply_free(reply* r) {
     table8cc_free(r->headers);
     sdsfree(r->content);
     if(r->obuf&&r->isCached == 0) sdsfree(r->obuf);
     free(r);
 }
 
-void replyReset(reply *r) {
+void _reply_reset(reply *r) {
     table8cc_make_empty(r->headers);
     sdsclear(r->content);
     if(r->obuf && r->isCached == 0) sdsfree(r->obuf);
@@ -56,10 +55,10 @@ void replyReset(reply *r) {
 }
 
 
-sds replyToBuffer(reply* r) {
+sds __reply_to_buffer(reply* r) {
     if(r->obuf == NULL) {
         sds obuf = sdsempty();
-        obuf = sdscat(obuf,replyStatusToString(r->status));
+        obuf = sdscat(obuf,_reply_status_to_string(r->status));
         unsigned int i;
         struct table8cc_entry *h;
          __table8xx_for_each(r->headers, i, h, hlist) {
@@ -75,32 +74,32 @@ sds replyToBuffer(reply* r) {
     return r->obuf;
 }
 
-void replyShareBuffer(reply *src, reply *dst)
+void reply_share_buffer(reply *src, reply *dst)
 {
-    dst->obuf = replyToBuffer(src);
+    dst->obuf = __reply_to_buffer(src);
     dst->isCached = 1;
 }
 
-void replyAddHeader(reply *r, const char *name, const char *value) {
+void reply_add_header(reply *r, const char *name, const char *value) {
     return table8cc_add_fixed(r->headers,strdup(name),strdup(value));
 }
 
-void replySetContent(reply *r , char* content){
+void reply_set_content(reply *r , char* content){
     r->content = sdscat(r->content,content);
 }
 
-void replySetStatus(reply *r , reply_status_type status){
+void reply_set_status(reply *r , reply_status_type status){
 
     r->status = status;
 }
 
-void replyStock(reply *rep, reply_status_type status, const char *content) {
-    rep->status = status;
-    if (content) rep->content = sdsnew(content);
+void reply_stock(reply *r, reply_status_type status, const char *content) {
+    r->status = status;
+    if (content) r->content = sdsnew(content);
 }
 
 
-char* replyStatusToString(reply_status_type status)
+char* _reply_status_to_string(reply_status_type status)
 {
     switch(status) {
     case reply_ok: return "HTTP/1.1 200 OK\r\n"; break;

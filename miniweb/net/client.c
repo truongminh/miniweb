@@ -18,9 +18,9 @@ http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
     anetNonBlock(NULL,fd);
     anetTcpNoDelay(NULL,fd);
     c->fd = fd;
-    c->rep = replyCreate();
+    c->rep = _reply_create();
     c->bufpos = 0;
-    c->req = request_create();
+    c->req = __request_create();
     c->lastinteraction = el->lastSecond;
     c->ip = strdup(ip);
     c->port = port;
@@ -57,7 +57,7 @@ void readQueryFromClient(ae_ev_loop *el, int fd, http_client *c) {
         c->lastinteraction = el->lastSecond;
         list_move(&c->elNode, &el->clients);
         /* NOTICE: nread or nread-1 */
-        switch(request_parse(req)){
+        switch(__request_parse(req)){
         case parse_not_completed:
             break;
         case parse_completed:
@@ -91,7 +91,7 @@ void sendReplyToClient(ae_ev_loop *el, int fd, http_client *c) {
 
     CLIENT_NOTUSED(el);
 
-        sds obuf = replyToBuffer(c->rep);
+        sds obuf = __reply_to_buffer(c->rep);
         int towrite = sdslen(obuf) - c->bufpos;
         nwritten = write(fd, obuf+c->bufpos,towrite);
         /* Content */
@@ -127,8 +127,8 @@ void freeClient(http_client *c) {
     close(c->fd);
     /* Release memory */
     if(c->ip) free(c->ip);
-    replyFree(c->rep);
-    request_free(c->req);
+    _reply_free(c->rep);
+    __request_free(c->req);
     __list_del_entry(&c->elNode);
     free(c);
 }
@@ -138,8 +138,8 @@ void freeClient(http_client *c) {
 /* resetClient prepare the client to process the next command */
 void resetClient(http_client *c) {
     c->bufpos = 0;
-    replyReset(c->rep);
-    request_reset(c->req);
+    _reply_reset(c->rep);
+    __request_reset(c->req);
 }
 
 

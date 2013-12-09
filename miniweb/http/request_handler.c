@@ -52,7 +52,7 @@ static int __state_handler(request *req, reply *rep)
     (void)req;
     char buf[128];
     sprintf(buf,"%d,%d\n",numConcurrentFD(),numRequestsPerSecond());
-    replySetContent(rep,buf);
+    reply_set_content(rep,buf);
     return 0;
 }
 
@@ -68,7 +68,7 @@ static int __list_handler(request *req, reply *rep)
 {
     (void)req;
     char *buf = MODULE_TABLE_list(handlers);
-    replySetContent(rep,buf);
+    reply_set_content(rep,buf);
     free(buf);
     return 0;
 }
@@ -87,8 +87,8 @@ void initRequestHandle(int id)
     add_state_handler(handlers);
     add_list_handler(handlers);
     loadLibDir(MODULE_DIR);
-    r_not_found = replyCreate();
-    replyStock(r_not_found,reply_not_found,"NOT FOUND");    
+    r_not_found = _reply_create();
+    reply_stock(r_not_found,reply_not_found,"NOT FOUND");    
 }
 
 int get_wid()
@@ -103,16 +103,16 @@ int requestHandle(request *req, reply *rep)
     if (_handler) {
         _handler(req,rep);
     } else {
-        replyShareBuffer(r_not_found,rep);
+        reply_share_buffer(r_not_found,rep);
     }
-    replyAddHeader(rep,"X-Powered-By","Miniweb");
+    reply_add_header(rep,"X-Powered-By","Miniweb");
     return HANDLER_OK;
 }
 
 void requestHandleError(request *req, reply *rep) {
     (void)req;
-    replySetStatus(rep,reply_not_found);
-    replySetContent(rep,"ERROR");
+    reply_set_status(rep,reply_not_found);
+    reply_set_content(rep,"ERROR");
 }
 
 void loadLib(char *fn, char *initFunc)

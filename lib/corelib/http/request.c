@@ -30,7 +30,6 @@
 #include <ctype.h>
 #include <string.h>
 #include "http/request.h"
-#include "lib/dicttype.h"
 #include "lib/compile.h"
 
 /*
@@ -70,7 +69,7 @@ static inline int _is_usual_value(char c)
 }
 
 
-request *request_create() {
+request *__request_create() {
     request* r;
     if((r = malloc(sizeof(*r))) == NULL) return NULL;
     r->method = r->uri = r->current_header_name = NULL;
@@ -85,7 +84,7 @@ request *request_create() {
     return r;
 }
 
-void request_free(request *r) {
+void __request_free(request *r) {
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
     table8cc_free(r->headers);
@@ -127,8 +126,7 @@ void request_query_parse(request *r) {
         };
         if(_key) { // last value
             table8cc_add_fixed(r->queries,_key,copy_string(query,ptr-query));
-        }
-        table8cc_print(r->queries);
+        }        
     }
 }
 
@@ -178,7 +176,7 @@ char *request_query_find_one(request *r, const char* key, int keylen) {
     return NULL;
 }
 
-void request_reset(request *r){
+void __request_reset(request *r){
     if(r->method) free(r->method);
     if(r->uri) free(r->uri);
 
@@ -220,7 +218,7 @@ void request_reset(request *r){
 }
 
 
-request_parse_state request_parse
+request_parse_state __request_parse
 (request* r)
 {
     request_parse_state result = parse_not_completed;
@@ -565,7 +563,7 @@ request_parse_state request_parse
 }
 
 
-void requestPrint(request *r){
+void _request_print(request *r){
     printf("%s %s\n",r->method,r->uri);
     table8cc_print(r->headers);
 

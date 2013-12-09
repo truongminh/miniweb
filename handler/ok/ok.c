@@ -1,4 +1,4 @@
-/* bmlog.c
+/* ok.c
  *
  * Copyright (c) 2013, EPI Technologies
  * written by Nguyen Truong Minh <nguyentrminh at gmail dot com>
@@ -30,19 +30,19 @@
 #include <stdio.h>
 #include "ok.h"
 
-static char *_url = "/ok";
+static char *_uri = "/ok";
 
 static int _handle(request *req, reply *rep);
 
 int init(MODULE_TABLE *handlers)
 {
-    MODULE_TABLE_add_fixed(handlers,_url,&_handle);
+    MODULE_TABLE_add_fixed(handlers,_uri,&_handle);
     return 0;
 }
 
 int _handle(request *req, reply *rep)
 {    
     (void)req;
-    replyStock(rep,reply_ok,NULL);
+    reply_stock(rep,reply_ok,NULL);
     return 0;
 }

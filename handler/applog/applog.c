@@ -1,4 +1,4 @@
-/* bmlog.c
+/* applog.c
  *
  * Copyright (c) 2013, EPI Technologies
  * written by Nguyen Truong Minh <nguyentrminh at gmail dot com>
@@ -86,8 +86,8 @@ static void create_key(void)
         errMsg("pthread key create %s",_uri);
     }
     pthread_mutex_init(&fd_lock, NULL);
-    bmlogOK = replyCreate();
-    replyStock(bmlogOK,reply_ok,NULL);
+    bmlogOK = _reply_create();
+    reply_stock(bmlogOK,reply_ok,NULL);
     offset = 0;
     jobList = listCreate();
 
@@ -231,7 +231,7 @@ int _handle(request *req, reply *rep)
     if(likely(myjob&&req->content)) {
         safeQueuePush(myjob,req->content);
         req->content = NULL; /* don't free this data */
-        replyShareBuffer(bmlogOK,rep);
+        reply_share_buffer(bmlogOK,rep);
         return 0;
     }
     return -1;

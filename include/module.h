@@ -1,20 +1,17 @@
 #ifndef MODULE_H_INCLUDED
 #define MODULE_H_INCLUDED
 
-#define MINIWEB_INTERNAL __attribute__ ((error("This function is not available for module")))
-
-#include "http/request.h"
-#include "http/reply.h"
-#include "lib/dict.h"
-
-#define PLUGIN_INIT "init"
-
 #include <malloc.h>
 #include <string.h>
 #include "lib/list.h"
 #include "lib/hash.h"
+#include "lib/dict.h"
 
-const char *MODULE_DIR = "./handler";
+#include "http/request.h"
+#include "http/reply.h"
+
+#define PLUGIN_INIT "init"
+#define MODULE_DIR "./handler"
 
 typedef int handlerProc(request *req, reply *rep);
 
@@ -146,16 +143,16 @@ static inline void MODULE_TABLE_print(MODULE_TABLE *ht){
     printf("Find: [%s:%p]\n", hfind,MODULE_TABLE_find(ht,hfind));
 }
 
-#define __BUF_SIZE 1024
+#define __MODULE_TABLE_PRINT_BUF_SIZE 1024
 static inline char *MODULE_TABLE_list(MODULE_TABLE *ht){
     unsigned int i;
     struct module_node *h;
-    char *buffer = malloc(__BUF_SIZE);
+    char *buffer = malloc(__MODULE_TABLE_PRINT_BUF_SIZE);
     char *ptr = buffer;
     int len;
     __MODULE_TABLE_for_each(ht, i, h, hlist) {
         len = strlen(h->key);
-        if (ptr - buffer + len > __BUF_SIZE - 2) {
+        if (ptr - buffer + len > __MODULE_TABLE_PRINT_BUF_SIZE - 2) {
             /* \0 and ? only two char is guaranteed */
             *ptr++ = '?';
             break;
