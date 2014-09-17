@@ -24,11 +24,12 @@ http_client *createClient(ae_ev_loop *el, int fd, const char* ip, int port) {
     c->lastinteraction = el->lastSecond;
     c->ip = strdup(ip);
     c->port = port;
-    c->blocked = 0;
+    c->blocked = 0;    
     if(kfifo_in(el->acceptingClients,&c,HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
         free(c);
         return NULL;
     }
+    write(el->socketpair_fds[0],"C", 1);
     return c;
 }
 

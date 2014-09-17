@@ -1,4 +1,6 @@
-/* A simple event-driven programming library. Originally I wrote this code
+/* This event loop was modified by Nguyen Truong Minh.
+ * Please refer to Redis source code for the original version.
+ * A simple event-driven programming library. Originally I wrote this code
  * for the Jim's event-loop (Jim is a Tcl interpreter) but later translated
  * it in form of a library for easy reuse.
  *
@@ -69,6 +71,7 @@ typedef struct ae_ev_loop {
     int myid;
     int numworkers;
     char accepting_clients_buffer[MAX_REQUEST_PER_LOOP];
+    int socketpair_fds[2];
     struct kfifo *acceptingClients;
 #ifdef AE_MAX_CLIENT_PER_WORKER
     unsigned int maxclients;
@@ -76,7 +79,7 @@ typedef struct ae_ev_loop {
 #ifdef AE_MAX_CLIENT_IDLE_TIME
     int maxidletime;
 #endif
-    char buf[CCACHE_IOBUF_LEN]; /* for temporary client data */
+    char buf[MNW_IOBUF_LEN]; /* for temporary client data */
     unsigned int processed;
     unsigned int lastSecondProcessed;
     time_t lastSecond;

@@ -11,7 +11,7 @@ static void *aeWorkerThread(void *eventloop);
 
 void *aeWorkerThread(void *eventloop)
 {
-   ae_ev_loop *el = eventloop;
+   ae_ev_loop *el = eventloop;   
    initRequestHandle(el->myid); /* initialize thread-specific data */
    aeMain(el);
    aeDeleteEventLoop(el);
@@ -42,13 +42,12 @@ static void acceptTcpHandler() {
          * We may Change el to one from workers.
          */
         //printf("accept %d %.2lf \n",cfd,(double)(clock()));
-#if (CCACHE_NUM_WORKER_THREADS == 4)
+#if (MNW_NUM_WORKER_THREADS == 4)
         httpWorker nextEL = workers[cfd&0x03];
 #else
-        static int numworkers = server.numworkers;
-        httpWorker nextEL = workers[cfd%numworkers];
+        httpWorker nextEL = workers[cfd%MNW_NUM_WORKER_THREADS];
 #endif
-        if ((c = createClient(nextEL,cfd,cip,cport)) == NULL) {            
+        if ((c = createClient(nextEL,cfd,cip,cport)) == NULL) {
             errMsg("create new clients [%d]",cip);
             continue;
         }
@@ -59,7 +58,7 @@ void initServer(char *bindaddr, int port)
 {    
     server.sport = port;    
     server.sip = strdup(bindaddr);
-    server.numworkers = CCACHE_NUM_WORKER_THREADS;
+    server.numworkers = MNW_NUM_WORKER_THREADS;
     int i;
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
@@ -71,7 +70,7 @@ void initServer(char *bindaddr, int port)
         ee->events = AE_UNACTIVATED;
     }
 
-    pthread_t threads[CCACHE_NUM_WORKER_THREADS];
+    pthread_t threads[MNW_NUM_WORKER_THREADS];
     int rc;
     long t;
     int numworkers = server.numworkers;

@@ -38,6 +38,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "net/ae.h"
+#include "net/anet.h"
 #include "net/client.h"
 
 
@@ -64,31 +65,6 @@ void workerBeforeSleep(struct ae_ev_loop *eventLoop){
         }
 #endif
     }
-
-
-    http_client *c;
-    while (kfifo_len(eventLoop->acceptingClients)) {
-        /* ... read it, one integer at a time */
-        if (kfifo_out(eventLoop->acceptingClients, &c, HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
-            printf("kfifo accepting clients %d\n", eventLoop->myid);
-            break;
-        }
-
-#ifdef AE_MAX_CLIENT_PER_WORKER
-        if(eventLoop->numfds > AE_MAX_CLIENT_PER_WORKER) {
-            static char *max_client_err = "-ERR MAX CLIENT\r\n";
-            /* That's a best effort error message, don't check write errors */
-            if (write(c->fd,max_client_err,17) == -1) {
-                /* Nothing to do, Just to avoid the warning... */
-            }
-            freeClient(c);
-            continue;
-#endif
-        }
-        c->el = eventLoop;
-        list_add(&c->elNode,&eventLoop->clients);
-        if (aeCreateFileEvent(eventLoop, c->fd, c)) freeClient(c);
-    }
 }
 
 ae_ev_loop *aeCreateEventLoop(void) {
@@ -97,7 +73,7 @@ ae_ev_loop *aeCreateEventLoop(void) {
     eventLoop = malloc(sizeof(*eventLoop));
     if (!eventLoop) return NULL;
 
-    eventLoop->epfd = epoll_create(AE_MAX_EPOLL_EVENTS); /* 1024 is just an hint for the kernel */
+    eventLoop->epfd = epoll_create(AE_MAX_EPOLL_EVENTS); /* 1024 is just a hint for the kernel */
     if (eventLoop->epfd < 0 ) {
         free(eventLoop);
         return NULL;
@@ -115,6 +91,9 @@ ae_ev_loop *aeCreateEventLoop(void) {
 #ifdef AE_MAX_CLIENT_IDLE_TIME
     eventLoop->maxidletime = AE_MAX_CLIENT_IDLE_TIME;
 #endif    
+
+    anetCreateSocketPair(NULL, eventLoop->socketpair_fds);
+    aeCreateFileEvent(eventLoop, eventLoop->socketpair_fds[1], NULL);
     eventLoop->lastSecond = time(NULL);
     eventLoop->loop = 0;
     eventLoop->lastSecondProcessed = eventLoop->processed;
@@ -182,6 +161,42 @@ static void aeGetTime(long *seconds, long *milliseconds)
 }
 */
 
+
+static int acceptNewClient(ae_ev_loop *eventLoop) {
+    char buf[1024];
+    int nread;
+
+    nread = read(eventLoop->socketpair_fds[1], buf, 1024);
+
+    http_client *c;
+    while (kfifo_len(eventLoop->acceptingClients)) {
+        /* ... read it, one integer at a time */
+        if (kfifo_out(eventLoop->acceptingClients, &c, HTTP_CLIENT_POINTER_SIZE) != HTTP_CLIENT_POINTER_SIZE) {
+            printf("kfifo accepting clients %d\n", eventLoop->myid);
+            break;
+        }
+
+#ifdef AE_MAX_CLIENT_PER_WORKER
+        if(eventLoop->numfds > AE_MAX_CLIENT_PER_WORKER) {
+            // TODO: write a http reply
+            static char *max_client_err = "-ERR MAX CLIENT\r\n";
+            /* That's a best effort error message, don't check write errors */
+            if (write(c->fd,max_client_err,17) == -1) {
+                /* Nothing to do, Just to avoid the warning... */
+            }
+            freeClient(c);
+            continue;
+#endif
+        }
+
+        c->el = eventLoop;
+        list_add(&c->elNode,&eventLoop->clients);
+        if (aeCreateFileEvent(eventLoop, c->fd, c) != AE_OK) freeClient(c);
+    }
+
+    return 1;
+}
+
 void aeProcessEvents(ae_ev_loop *eventLoop)
 {
 
@@ -198,8 +213,13 @@ void aeProcessEvents(ae_ev_loop *eventLoop)
         while(numevents--) {
             fired_ee = newees++;
             fd = fired_ee->data.fd;
-            fe = aeEvents + fired_ee->data.fd;            
-            if (fired_ee->events & fe->ee->events) {
+            fe = aeEvents + fired_ee->data.fd;
+
+            if (fd == eventLoop->socketpair_fds[1]) {                
+                acceptNewClient(eventLoop);
+            }
+
+            else if (fired_ee->events & fe->ee->events) {
                 switch(fired_ee->events) {
                 case AE_READABLE:
                     readQueryFromClient(eventLoop,fd,fe->clientData);

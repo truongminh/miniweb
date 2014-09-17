@@ -8,11 +8,11 @@
 CC            = gcc
 CXX           = g++
 DEFINES       = 
-CFLAGS        = -pipe -g -Wall -W -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -g -Wall -W -fPIC $(DEFINES)
-INCPATH       = -I. -I../../include
+CFLAGS        = -m64 -pipe -g -Wall -W -fPIC $(DEFINES)
+CXXFLAGS      = -m64 -pipe -g -Wall -W -fPIC $(DEFINES)
+INCPATH       = -I/usr/lib64/qt4/mkspecs/linux-g++-64 -I. -I../../include
 LINK          = gcc
-LFLAGS        = -shared
+LFLAGS        = -m64 -shared
 LIBS          = $(SUBLIBS)   -lpthread -L../../build/lib/ -lcore 
 AR            = ar cqs
 RANLIB        = 

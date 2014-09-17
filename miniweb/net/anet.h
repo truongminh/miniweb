@@ -47,6 +47,8 @@ int anetTcpAccept(char *err, int serversock, char *ip, int *port);
 int anetUnixAccept(char *err, int serversock);
 int anetWrite(int fd, char *buf, int count);
 
+int anetCreateSocketPair(char *err, int fds[2]);
+
 /* TCP options */
 int anetNonBlock(char *err, int fd);
 int anetTcpNoDelay(char *err, int fd);

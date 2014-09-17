@@ -45,6 +45,8 @@
 #include <stdio.h>
 #include "net/anet.h"
 
+
+
 static void anetSetError(char *err, const char *fmt, ...)
 {
     va_list ap;
@@ -128,6 +130,22 @@ static int anetCreateSocket(char *err, int domain) {
     }
     return s;
 }
+
+int anetCreateSocketPair(char *err, int fds[2]) {
+    if ((socketpair(AF_UNIX, SOCK_STREAM, 0, fds)) == -1) {
+        anetSetError(err, "creating socket: %s", strerror(errno));
+        return ANET_ERR;
+    }
+
+    anetNonBlock(NULL,fds[0]);
+    anetTcpNoDelay(NULL,fds[0]);
+
+    anetNonBlock(NULL,fds[1]);
+    anetTcpNoDelay(NULL,fds[1]);
+
+    return ANET_OK;
+}
+
 
 /* TODO: what happen if totlen > count?
          if buf += nread may go out of buffer */

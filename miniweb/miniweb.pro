@@ -12,7 +12,7 @@ SOURCES = main.c \
     http/request_handler.c
 
 
-TARGET = ../build/miniweb # move executable one dire up
+TARGET = ../build/miniweb # move executable to build folder
 
 HEADERS += \
     usage.h \

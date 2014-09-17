@@ -9,7 +9,7 @@ typedef struct {
     int sport;
     char *sip;
     int sfd;
-    httpWorker workers[CCACHE_NUM_WORKER_THREADS];
+    httpWorker workers[MNW_NUM_WORKER_THREADS];
     int numworkers;
     ae_socket_event events[AE_FD_SET_SIZE]; /* Registered events */
 } httpServer;
