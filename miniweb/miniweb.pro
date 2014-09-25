@@ -5,26 +5,23 @@ CONFIG -= qt
 
 SOURCES = main.c \
     usage.c \
-    net/http_server.c \
-    net/client.c \
-    net/anet.c \
-    net/ae.c \
+    net/*.c \
     http/request_handler.c
 
 
-TARGET = ../build/miniweb # move executable to build folder
+TARGET = ../build/miniweb # move the executable to the build folder
 
 HEADERS += \
     usage.h \
     signal_handler.h \
-    net/http_server.h \
-    net/client.h \
-    net/anet.h \
-    net/ae.h \
-    http/request_handler.h
+    net/*.h \
+    http/request_handler.h \
+    miniweb_config.h
 
-INCLUDEPATH += ../include
+INCLUDEPATH += ../include ../lib
 
-LIBS += -ldl
-LIBS += -lpthread ../build/lib/libcore.so
+LIBS += -lpthread -ldl -L../build/lib -lsys -lds -lhttp
 
+LibUV.commands = cd ../vendor/libuv && make && cp ./libuv.a ../../build/lib/
+PRE_TARGETDEPS += LibUV
+QMAKE_EXTRA_TARGETS += LibUV

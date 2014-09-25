@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "net/anet.h"
 #include "net/client.h"
-#include "syslib/tlpi_hdr.h"
+#include "sys/tlpi_hdr.h"
 #include "net/http_server.h"
 #include "http/request_handler.h"
 

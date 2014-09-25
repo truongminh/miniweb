@@ -36,11 +36,11 @@
 #include <limits.h>
 
 #include "applog.h"
-#include "lib/safe_queue.h"
-#include "lib/sds.h"
-#include "lib/compile.h"
-#include "syslib/tlpi_hdr.h"
-#include "lib/adlist.h"
+#include "ds/safe_queue.h"
+#include "ds/sds.h"
+#include "ds/compile.h"
+#include "sys/tlpi_hdr.h"
+#include "ds/adlist.h"
 
 static char *_uri = "/applog";
 static char *log_dir = "/tmp/relog";

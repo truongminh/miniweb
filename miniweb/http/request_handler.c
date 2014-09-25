@@ -31,11 +31,11 @@
 #include <dirent.h>
 
 #include "http/request_handler.h"
-#include "lib/util.h"
-#include "lib/dicttype.h"
-#include "syslib/tlpi_hdr.h"
+#include "ds/util.h"
+#include "ds/dicttype.h"
+#include "sys/tlpi_hdr.h"
 #include "net/http_server.h"
-#include "module.h"
+#include "http/module.h"
 
 static __thread MODULE_TABLE *handlers;
 static __thread int wid;
@@ -103,6 +103,7 @@ int requestHandle(request *req, reply *rep)
     if (_handler) {
         _handler(req,rep);
     } else {
+        // TODO Pass request to Lua Environment
         reply_share_buffer(r_not_found,rep);
     }
     reply_add_header(rep,"X-Powered-By","Miniweb");

@@ -1,7 +1,7 @@
 #ifndef BMLOG_H
 #define BMLOG_H
 
-#include "module.h"
+#include "http/module.h"
 
 int init(MODULE_TABLE *handlers);
 

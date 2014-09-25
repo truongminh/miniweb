@@ -37,6 +37,7 @@
 
 void initRequestHandle(int id);
 
+// worker id
 int get_wid();
 
 int requestHandle(request *req, reply *rep);

@@ -36,9 +36,9 @@
 #define __AE_H__
 
 #include <sys/epoll.h>
-//#include "lib/adlist.h"
-#include "lib/list.h"
-#include "lib/kfifo.h"
+//#include "ds/adlist.h"
+#include "ds/list.h"
+#include "ds/kfifo.h"
 #include "miniweb_config.h"
 
 #define AE_OK 0

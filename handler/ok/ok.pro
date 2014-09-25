@@ -11,8 +11,8 @@ SOURCES += \
 HEADERS += \
     ok.h
 
-INCLUDEPATH += ../../include
+INCLUDEPATH += ../../lib
 
-LIBS += -lpthread -L../../build/lib/ -lcore
+LIBS += -lpthread -L../../build/lib/ -lhttp
 
 

@@ -200,7 +200,7 @@ static int acceptNewClient(ae_ev_loop *eventLoop) {
 void aeProcessEvents(ae_ev_loop *eventLoop)
 {
 
-        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,0);
+        int numevents = epoll_wait(eventLoop->epfd,eventLoop->newees,AE_MAX_EPOLL_EVENTS,100);
         if(numevents < 1) {
             /* No waiting client */
             usleep(10000);

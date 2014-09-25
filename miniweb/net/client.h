@@ -8,12 +8,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include "miniweb_config.h"
-#include "lib/sds.h"    /* Dynamic safe strings */
-#include "lib/util.h"
+#include "ds/sds.h"    /* Dynamic safe strings */
+#include "ds/util.h"
 #include "http/reply.h"
 #include "http/request.h"
 #include "net/http_server.h"
-#include "lib/list.h"
+#include "ds/list.h"
 
 extern httpServer server;
 

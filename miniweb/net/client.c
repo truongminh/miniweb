@@ -4,9 +4,9 @@
 #include "net/anet.h"   /* Networking the easy way */
 #include "pthread.h"
 #include "http/request_handler.h"
-#include "lib/util.h"
+#include "ds/util.h"
 #include "net/http_server.h"
-#include "syslib/tlpi_hdr.h"
+#include "sys/tlpi_hdr.h"
 
 static int _installWriteEvent(ae_ev_loop *el, http_client *c);
 

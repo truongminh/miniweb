@@ -1,7 +1,7 @@
 #ifndef APPLOG_H
 #define APPLOG_H
 
-#include "module.h"
+#include "http/module.h"
 
 int init(MODULE_TABLE *handlers);
 

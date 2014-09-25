@@ -1,10 +1,13 @@
 TEMPLATE = subdirs
-CONFIG += console
 CONFIG += ordered
 CONFIG -= app_bundle
 CONFIG -= qt
+#sys = system
+#ds = data structure
 
 SUBDIRS = \
-          corelib
+    sys \
+    ds \
+    http
 
-
+http.depends += sys ds
